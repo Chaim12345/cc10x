@@ -1,23 +1,13 @@
 import type { Plugin } from '@opencode-ai/plugin';
 import { cc10xRouter } from './router';
-import { agentDefinitions } from './agents';
-import { skillDefinitions } from './skills';
 
-export const OpenCodeCC10xPlugin: Plugin = async (ctx) => {
+export const OpenCodeCC10xPlugin: Plugin = async (input) => {
   console.log('🔌 OpenCode cc10x Plugin v6.0.18 initializing...');
 
-  // Register all cc10x agents
-  for (const agent of agentDefinitions) {
-    ctx.registerAgent?.(agent);
-  }
-
-  // Register all cc10x skills
-  for (const skill of skillDefinitions) {
-    ctx.registerSkill?.(skill);
-  }
-
-  // Set up the router hook
-  const routerHook = await cc10xRouter(ctx);
+  const { $ } = input;
+  
+  // Set up the router hook with shell access
+  const routerHook = await cc10xRouter({ ...input, $ });
 
   return {
     name: 'opencode-cc10x',
@@ -47,7 +37,34 @@ export const OpenCodeCC10xPlugin: Plugin = async (ctx) => {
           return await routerHook.manualInvoke(args, context);
         }
       }
-    }
+    },
+    // Add command to appear in /commands menu
+    commands: [
+      {
+        name: 'cc10x-orchestrate',
+        description: 'Run cc10x intelligent orchestration for a development task',
+        execute: async (args, context) => {
+          const request = args.request || args.task || args.prompt || '';
+          if (!request.trim()) {
+            return 'Please provide a task description. Usage: /cc10x-orchestrate <task description>';
+          }
+          
+          console.log(`🚀 cc10x orchestration triggered for: ${request}`);
+          
+          // Create a workflow task through the orchestrator
+          const workflowTaskId = `cc10x-manual-${Date.now()}`;
+          
+          // Use the router's manual invoke to start orchestration
+          await routerHook.manualInvoke({
+            request,
+            taskId: workflowTaskId,
+            forceWorkflow: true
+          }, context);
+          
+          return `✅ cc10x orchestration started for task: ${request}`;
+        }
+      }
+    ]
   };
 };
 

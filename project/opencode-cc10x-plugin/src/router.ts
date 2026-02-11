@@ -15,10 +15,10 @@ export interface RouterHooks {
   manualInvoke: (args: any, context: any) => Promise<string>;
 }
 
-export async function cc10xRouter(ctx: PluginContext): Promise<{ routerHooks: RouterHooks }> {
+export async function cc10xRouter(input: any): Promise<{ routerHooks: RouterHooks }> {
   
-  // Initialize memory system
-  await memoryManager.initialize(ctx);
+  // Initialize memory system with shell access
+  await memoryManager.initialize(input);
   
   // State tracking
   const activeWorkflows = new Map<string, WorkflowState>();
@@ -35,27 +35,27 @@ export async function cc10xRouter(ctx: PluginContext): Promise<{ routerHooks: Ro
         }
 
         // Check for active workflow to resume
-        const activeWorkflow = await checkForActiveWorkflow(ctx);
+        const activeWorkflow = await checkForActiveWorkflow(input);
         if (activeWorkflow) {
-          await resumeWorkflow(activeWorkflow, userMessage, ctx);
+          await resumeWorkflow(activeWorkflow, userMessage, input);
           return;
         }
 
         // Load memory for new workflow
-        const memory = await memoryManager.load(ctx);
+        const memory = await memoryManager.load(input);
         
         // Detect user intent
         const intent = detectIntent(userMessage, memory);
         
         // Create task hierarchy
-        const workflowTask = await taskOrchestrator.createWorkflowTask(ctx, {
+        const workflowTask = await taskOrchestrator.createWorkflowTask(input, {
           userRequest: userMessage,
           intent: intent,
           memory: memory
         });
 
         // Execute appropriate workflow
-        await workflowExecutor.executeWorkflow(ctx, {
+        await workflowExecutor.executeWorkflow(input, {
           intent: intent,
           userRequest: userMessage,
           memory: memory,
@@ -71,30 +71,30 @@ export async function cc10xRouter(ctx: PluginContext): Promise<{ routerHooks: Ro
 
     sessionCreated: async (input: any, output: any) => {
       // Ensure memory directory exists on session start
-      await memoryManager.ensureDirectory(ctx);
+      await memoryManager.ensureDirectory(input);
     },
 
     sessionCompacted: async (input: any, output: any) => {
       // Save critical state before compaction
-      await memoryManager.saveCompactionCheckpoint(ctx);
+      await memoryManager.saveCompactionCheckpoint(input);
     },
 
     toolExecuteBefore: async (input: ToolInput, output: ToolOutput) => {
       // TDD enforcement: Check if we're in a test phase
       if (input.tool === 'bash' && isTestCommand(input.args?.command)) {
-        await enforceTDDRequirements(ctx, input);
+        await enforceTDDRequirements(input, input);
       }
       
       // Permission-free memory operations check
       if (isMemoryOperation(input)) {
-        await validateMemoryOperation(ctx, input);
+        await validateMemoryOperation(input, input);
       }
     },
 
     toolExecuteAfter: async (input: ToolInput, output: ToolOutput) => {
       // Capture exit codes for verification
       if (output.exitCode !== undefined) {
-        await taskOrchestrator.recordExecutionResult(ctx, {
+        await taskOrchestrator.recordExecutionResult(input, {
           tool: input.tool,
           command: input.args?.command,
           exitCode: output.exitCode,
@@ -109,7 +109,7 @@ export async function cc10xRouter(ctx: PluginContext): Promise<{ routerHooks: Ro
       const taskId = input.taskId;
       
       if (taskId) {
-        await taskOrchestrator.updateTaskStatus(ctx, taskId, 'in_progress');
+        await taskOrchestrator.updateTaskStatus(input, taskId, 'in_progress');
       }
       
       // Log agent start for debugging
@@ -122,21 +122,42 @@ export async function cc10xRouter(ctx: PluginContext): Promise<{ routerHooks: Ro
       const result = input.result || input.output;
       
       if (taskId) {
-        await taskOrchestrator.updateTaskStatus(ctx, taskId, 'completed', result);
+        await taskOrchestrator.updateTaskStatus(input, taskId, 'completed', result);
       }
       
       // Extract memory notes from agent output
       const memoryNotes = extractMemoryNotes(result);
       if (memoryNotes && memoryNotes.length > 0) {
-        await memoryManager.accumulateNotes(ctx, memoryNotes);
+        await memoryManager.accumulateNotes(input, memoryNotes);
       }
       
       console.log(`✅ cc10x agent completed: ${agentName}`);
     },
 
     manualInvoke: async (args: any, context: any) => {
-      // Allow manual router invocation
-      return 'cc10x router invoked manually. Use natural language for development tasks.';
+      // Allow manual router invocation - simulate a message received
+      const request = args.request || args.task || args.prompt || '';
+      if (!request.trim()) {
+        return 'Please provide a task description.';
+      }
+      
+      console.log(`🚀 Manual cc10x invocation: ${request}`);
+      
+      // Create a synthetic message event and process it through the router
+      const syntheticMessage = {
+        id: `manual-${Date.now()}`,
+        content: request,
+        role: 'user',
+        timestamp: new Date().toISOString()
+      };
+      
+      try {
+        await routerHooks.messageReceived(context, syntheticMessage);
+        return `✅ cc10x orchestration started for: ${request}`;
+      } catch (error) {
+        console.error('Manual invocation failed:', error);
+        return `❌ cc10x orchestration failed: ${error.message}`;
+      }
     }
   };
 

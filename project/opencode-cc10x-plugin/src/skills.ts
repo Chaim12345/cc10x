@@ -1495,14 +1495,14 @@ Remember: The goal is not to find the "perfect" solution, but a "good enough" so
 ## Code Organization
 
 ### Project Structure
-```
+\`\`\`
 src/
-├── domain/          # Business logic, entities
-├── application/     # Use cases, services
-├── infrastructure/  # External services, databases
-├── presentation/    # API, UI, CLI
-└── shared/          # Common utilities
-```
+  domain/          # Business logic, entities
+  application/     # Use cases, services
+  infrastructure/  # External services, databases
+  presentation/    # API, UI, CLI
+  shared/          # Common utilities
+\`\`\`
 
 ### Module Organization
 - Feature-based modules

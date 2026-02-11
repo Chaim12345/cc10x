@@ -7,7 +7,9 @@
   "scripts": {
     "build": "bun build src/index.ts --outdir dist --target node",
     "dev": "bun build --watch src/index.ts --outdir dist --target node",
-    "test": "bun test",
+    "test": "bun test --coverage",
+    "test:watch": "bun test --watch",
+    "lint": "bun x tsc --noEmit",
     "prepublishOnly": "bun run build"
   },
   "keywords": [
@@ -25,16 +27,12 @@
     "type": "git",
     "url": "https://github.com/your-org/opencode-cc10x"
   },
-  "dependencies": {
-    "@opencode-ai/plugin": "^0.8.0"
-  },
+  "dependencies": {},
   "devDependencies": {
     "typescript": "^5.0.0",
     "@types/node": "^20.0.0"
   },
-  "peerDependencies": {
-    "opencode": ">=0.8.0"
-  },
+  "peerDependencies": {},
   "engines": {
     "node": ">=18.0.0",
     "bun": ">=1.0.0"

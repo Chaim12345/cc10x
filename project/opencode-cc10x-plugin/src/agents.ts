@@ -2,7 +2,7 @@ import type { AgentDefinition } from '@opencode-ai/plugin';
 
 export const agentDefinitions: AgentDefinition[] = [
   {
-    name: 'cc10x-component-builder',
+    name: 'component-builder',
     description: 'Builds features using TDD cycle (RED → GREEN → REFACTOR). Used by cc10x router for BUILD workflows.',
     mode: 'subagent',
     model: 'inherit', // Use primary agent's model
@@ -76,7 +76,7 @@ Follow the exact YAML contract format with STATUS, CONFIDENCE, TDD_RED_EXIT, TDD
     }
   },
   {
-    name: 'cc10x-bug-investigator',
+    name: 'bug-investigator',
     description: 'Investigates bugs with log-first approach. Used by cc10x router for DEBUG workflows.',
     mode: 'subagent',
     model: 'inherit',
@@ -141,7 +141,7 @@ Only report findings with ≥80% confidence.`,
     }
   },
   {
-    name: 'cc10x-code-reviewer',
+    name: 'code-reviewer',
     description: 'Reviews code with 80%+ confidence threshold. Used by cc10x router for REVIEW, BUILD, and DEBUG workflows.',
     mode: 'subagent',
     model: 'inherit',
@@ -210,7 +210,7 @@ Comprehensive review of user-specified code with full analysis.`,
     }
   },
   {
-    name: 'cc10x-silent-failure-hunter',
+    name: 'silent-failure-hunter',
     description: 'Finds silent failures and error handling gaps. Used by cc10x router for BUILD workflows (parallel with code-reviewer).',
     mode: 'subagent',
     model: 'inherit',
@@ -293,7 +293,7 @@ Any empty catch block = CRITICAL issue. No exceptions.`,
     }
   },
   {
-    name: 'cc10x-integration-verifier',
+    name: 'integration-verifier',
     description: 'Performs end-to-end validation. Used by cc10x router as final step in BUILD and DEBUG workflows.',
     mode: 'subagent',
     model: 'inherit',
@@ -381,7 +381,7 @@ If you cannot verify with exit code 0, the verdict is FAIL.`,
     }
   },
   {
-    name: 'cc10x-planner',
+    name: 'planner',
     description: 'Creates comprehensive plans with research. Used by cc10x router for PLAN workflows.',
     mode: 'subagent',
     model: 'inherit',

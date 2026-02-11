@@ -62,11 +62,14 @@ export function detectIntent(message: string, memory?: any): DetectionResult {
     selectedIntent = 'DEBUG';
     maxScore = intentScores['DEBUG'];
   } else {
-    // For other intents, pick highest scoring
+    // For other intents, pick highest scoring with priority tie-breaking
     for (const intent of INTENT_PRIORITY) {
-      if (intent !== 'DEBUG' && intentScores[intent] > maxScore) {
+      if (intent === 'DEBUG') continue; // already handled
+      
+      const score = intentScores[intent];
+      if (score > maxScore || (score === maxScore && INTENT_PRIORITY.indexOf(intent) < INTENT_PRIORITY.indexOf(selectedIntent))) {
         selectedIntent = intent;
-        maxScore = intentScores[intent];
+        maxScore = score;
       }
     }
   }

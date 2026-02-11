@@ -1,4 +1,3 @@
-import type { PluginContext } from '@opencode-ai/plugin';
 import { taskOrchestrator } from './task-orchestrator';
 import { memoryManager } from './memory';
 import { WorkflowType } from './intent-detection';
@@ -14,7 +13,7 @@ export interface WorkflowOptions {
 export class WorkflowExecutor {
   
   async executeWorkflow(
-    ctx: PluginContext, 
+    input: any, 
     options: WorkflowOptions
   ): Promise<void> {
     const { intent, userRequest, memory, workflowTaskId, activeForm } = options;
@@ -24,21 +23,21 @@ export class WorkflowExecutor {
     try {
       switch (intent) {
         case 'BUILD':
-          await this.executeBuildWorkflow(ctx, { userRequest, memory, workflowTaskId });
+          await this.executeBuildWorkflow(input, { userRequest, memory, workflowTaskId });
           break;
         case 'DEBUG':
-          await this.executeDebugWorkflow(ctx, { userRequest, memory, workflowTaskId });
+          await this.executeDebugWorkflow(input, { userRequest, memory, workflowTaskId });
           break;
         case 'REVIEW':
-          await this.executeReviewWorkflow(ctx, { userRequest, memory, workflowTaskId });
+          await this.executeReviewWorkflow(input, { userRequest, memory, workflowTaskId });
           break;
         case 'PLAN':
-          await this.executePlanWorkflow(ctx, { userRequest, memory, workflowTaskId });
+          await this.executePlanWorkflow(input, { userRequest, memory, workflowTaskId });
           break;
       }
 
       // Final memory update (workflow-final)
-      await this.executeMemoryUpdate(ctx, workflowTaskId);
+      await this.executeMemoryUpdate(input, workflowTaskId);
       
       // Mark workflow complete
       await taskOrchestrator.completeWorkflow(workflowTaskId);
@@ -47,81 +46,81 @@ export class WorkflowExecutor {
 
     } catch (error) {
       console.error(`❌ ${intent} workflow failed:`, error);
-      await this.handleWorkflowFailure(ctx, workflowTaskId, error);
+      await this.handleWorkflowFailure(input, workflowTaskId, error);
     }
   }
 
   private async executeBuildWorkflow(
-    ctx: PluginContext, 
+    input: any, 
     options: { userRequest: string; memory: any; workflowTaskId: string }
   ): Promise<void> {
     const { userRequest, memory, workflowTaskId } = options;
 
     // Step 1: component-builder (TDD)
-    await this.invokeAgent(ctx, {
-      agentName: 'cc10x-component-builder',
+    await this.invokeAgent(input, {
+      agentName: 'component-builder',
       taskId: `${workflowTaskId}-builder`,
       prompt: this.buildBuilderPrompt(userRequest, memory),
       waitForCompletion: true
     });
 
     // Step 2: Parallel execution - code-reviewer and silent-failure-hunter
-    await this.invokeParallelAgents(ctx, {
-      agentNames: ['cc10x-code-reviewer', 'cc10x-silent-failure-hunter'],
+    await this.invokeParallelAgents(input, {
+      agentNames: ['code-reviewer', 'silent-failure-hunter'],
       baseTaskId: workflowTaskId,
       sharedPrompt: this.buildReviewAndHuntPrompt(userRequest, memory),
       waitForCompletion: true
     });
 
     // Step 3: integration-verifier
-    await this.invokeAgent(ctx, {
-      agentName: 'cc10x-integration-verifier',
+    await this.invokeAgent(input, {
+      agentName: 'integration-verifier',
       taskId: `${workflowTaskId}-verifier`,
-      prompt: await this.buildVerifierPrompt(ctx, workflowTaskId),
+      prompt: await this.buildVerifierPrompt(input, workflowTaskId),
       waitForCompletion: true
     });
   }
 
   private async executeDebugWorkflow(
-    ctx: PluginContext, 
+    input: any, 
     options: { userRequest: string; memory: any; workflowTaskId: string }
   ): Promise<void> {
     const { userRequest, memory, workflowTaskId } = options;
 
     // Step 1: bug-investigator (log-first)
-    await this.invokeAgent(ctx, {
-      agentName: 'cc10x-bug-investigator',
+    await this.invokeAgent(input, {
+      agentName: 'bug-investigator',
       taskId: `${workflowTaskId}-investigator`,
       prompt: this.buildDebugPrompt(userRequest, memory),
       waitForCompletion: true
     });
 
     // Step 2: code-reviewer (validate fix)
-    await this.invokeAgent(ctx, {
-      agentName: 'cc10x-code-reviewer',
+    await this.invokeAgent(input, {
+      agentName: 'code-reviewer',
       taskId: `${workflowTaskId}-reviewer`,
       prompt: this.buildReviewFixPrompt(userRequest, memory),
       waitForCompletion: true
     });
 
     // Step 3: integration-verifier
-    await this.invokeAgent(ctx, {
-      agentName: 'cc10x-integration-verifier',
+    await this.invokeAgent(input, {
+      agentName: 'integration-verifier',
       taskId: `${workflowTaskId}-verifier`,
-      prompt: await this.buildVerifierPrompt(ctx, workflowTaskId),
+      prompt: await this.buildVerifierPrompt(input, workflowTaskId),
       waitForCompletion: true
     });
   }
 
   private async executeReviewWorkflow(
-    ctx: PluginContext, 
+    input: any, 
     options: { userRequest: string; memory: any; workflowTaskId: string }
   ): Promise<void> {
     const { userRequest, memory, workflowTaskId } = options;
 
     // Single step: code-reviewer
-    await this.invokeAgent(ctx, {
-      agentName: 'cc10x-code-reviewer',
+    await this.invokeAgent(input, {
+      agentName: 'code-reviewer',
       taskId: `${workflowTaskId}-reviewer`,
       prompt: this.buildReviewPrompt(userRequest, memory),
       waitForCompletion: true
@@ -129,14 +128,14 @@ export class WorkflowExecutor {
   }
 
   private async executePlanWorkflow(
-    ctx: PluginContext, 
+    input: any, 
     options: { userRequest: string; memory: any; workflowTaskId: string }
   ): Promise<void> {
     const { userRequest, memory, workflowTaskId } = options;
 
     // Single step: planner
-    await this.invokeAgent(ctx, {
-      agentName: 'cc10x-planner',
+    await this.invokeAgent(input, {
+      agentName: 'planner',
       taskId: `${workflowTaskId}-planner`,
       prompt: this.buildPlanPrompt(userRequest, memory),
       waitForCompletion: true
@@ -144,7 +143,7 @@ export class WorkflowExecutor {
   }
 
   private async executeMemoryUpdate(
-    ctx: PluginContext, 
+    input: any, 
     workflowTaskId: string
   ): Promise<void> {
     // This is the workflow-final memory persistence
@@ -152,16 +151,16 @@ export class WorkflowExecutor {
     console.log('💾 Executing workflow-final memory update');
     
     // Persist any accumulated memory notes
-    await memoryManager.persistAccumulatedNotes(ctx);
+    await memoryManager.persistAccumulatedNotes(input);
     
     // Update progress.md with completion
-    await memoryManager.updateProgress(ctx, {
+    await memoryManager.updateProgress(input, {
       completed: [`Workflow ${workflowTaskId} completed with verification`]
     });
   }
 
   private async invokeAgent(
-    ctx: PluginContext, 
+    input: any, 
     options: {
       agentName: string;
       taskId: string;
@@ -175,27 +174,27 @@ export class WorkflowExecutor {
 
     try {
       // Update task status to in_progress
-      await taskOrchestrator.updateTaskStatus(ctx, taskId, 'in_progress');
+      await taskOrchestrator.updateTaskStatus(input, taskId, 'in_progress');
 
       // Invoke the agent using OpenCode's agent system
-      const result = await ctx.invokeAgent(agentName, {
+      const result = await input.client.app.agent.invoke(agentName, {
         prompt: prompt,
         taskId: taskId
       });
 
       // Update task status to completed
-      await taskOrchestrator.updateTaskStatus(ctx, taskId, 'completed', result);
+      await taskOrchestrator.updateTaskStatus(input, taskId, 'completed', result);
 
       console.log(`✅ Agent ${agentName} completed`);
     } catch (error) {
       console.error(`❌ Agent ${agentName} failed:`, error);
-      await taskOrchestrator.updateTaskStatus(ctx, taskId, 'blocked');
+      await taskOrchestrator.updateTaskStatus(input, taskId, 'blocked');
       throw error;
     }
   }
 
   private async invokeParallelAgents(
-    ctx: PluginContext, 
+    input: any, 
     options: {
       agentNames: string[];
       baseTaskId: string;
@@ -209,7 +208,7 @@ export class WorkflowExecutor {
 
     // Create promises for all agents
     const agentPromises = agentNames.map(agentName => 
-      this.invokeAgent(ctx, {
+      this.invokeAgent(input, {
         agentName,
         taskId: `${baseTaskId}-${agentName.split('-').pop()}`,
         prompt: sharedPrompt,
@@ -291,7 +290,7 @@ Only report issues with ≥80% confidence. Provide file:line citations.
   }
 
   private async buildVerifierPrompt(
-    ctx: PluginContext, 
+    input: any, 
     workflowTaskId: string
   ): Promise<string> {
     // Collect findings from previous agents
@@ -494,14 +493,14 @@ Create a comprehensive plan that includes:
   }
 
   private async handleWorkflowFailure(
-    ctx: PluginContext, 
+    input: any, 
     workflowTaskId: string, 
     error: any
   ): Promise<void> {
     console.error(`Workflow ${workflowTaskId} failed:`, error);
     
     // Update memory with failure
-    await memoryManager.updateActiveContext(ctx, {
+    await memoryManager.updateActiveContext(input, {
       recentChanges: [`Workflow ${workflowTaskId} failed: ${error.message}`],
       blockers: [`Workflow failure: ${error.message}`]
     });

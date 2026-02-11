@@ -1,4 +1,3 @@
-import type { PluginContext } from '@opencode-ai/plugin';
 import { readFile, writeFile, editFile, mkdir } from './compatibility-layer';
 
 export interface CC10XMemory {
@@ -88,26 +87,34 @@ export class MemoryManager {
   private memoryCache: CC10XMemory | null = null;
   private pendingNotes: string[] = [];
 
-  async initialize(ctx: PluginContext): Promise<void> {
-    this.ctx = ctx;
-    await this.ensureDirectory(ctx);
+  async initialize(input: any): Promise<void> {
+    this.ctx = input;
+    await this.ensureDirectory(input);
   }
 
-  async ensureDirectory(ctx: PluginContext): Promise<void> {
+  async ensureDirectory(input: any): Promise<void> {
     try {
-      // Use OpenCode's bash tool to create directory (permission-free)
-      await ctx.bash('mkdir', ['-p', MEMORY_DIR]);
+      // Use OpenCode's shell to create directory (permission-free)
+      const $ = input.$;
+      if (typeof $ !== 'function') {
+        throw new Error('Shell not available');
+      }
+      const result = await $`mkdir -p ${MEMORY_DIR}`;
+      if (result.exitCode !== 0) {
+        throw new Error(`mkdir failed: ${result.stderr.toString()}`);
+      }
     } catch (error) {
       console.warn('Could not create memory directory:', error);
+      // Don't throw - directory might already exist
     }
   }
 
-  async load(ctx: PluginContext): Promise<CC10XMemory> {
+  async load(input: any): Promise<CC10XMemory> {
     if (this.memoryCache) {
       return this.memoryCache;
     }
 
-    const memory: CC10XMemory = {
+    let memory: CC10XMemory = {
       activeContext: '',
       patterns: '',
       progress: '',
@@ -118,7 +125,7 @@ export class MemoryManager {
       // Try to read each memory file
       for (const [key, path] of Object.entries(MEMORY_FILES)) {
         try {
-          const content = await ctx.readFile(path);
+          const content = await readFile(input, path);
           memory[key as keyof CC10XMemory] = content;
         } catch (error) {
           // File doesn't exist - will create with defaults
@@ -132,7 +139,7 @@ export class MemoryManager {
     // Ensure required sections exist (auto-heal)
     memory = this.autoHealMemory(memory);
     this.memoryCache = memory;
-    return memory;
+    return memory; // Return cached reference
   }
 
   private autoHealMemory(memory: CC10XMemory): CC10XMemory {
@@ -155,24 +162,35 @@ export class MemoryManager {
       return content;
     };
 
-    memory.activeContext = ensureSection(memory.activeContext, [
-      'References', 'Decisions', 'Learnings'
-    ]);
+    // Handle empty activeContext - create full template
+    if (!memory.activeContext || memory.activeContext.trim() === '') {
+      memory.activeContext = DEFAULT_ACTIVE_CONTEXT;
+    } else {
+      memory.activeContext = ensureSection(memory.activeContext, [
+        'References', 'Decisions', 'Learnings'
+      ]);
+    }
 
-    memory.progress = ensureSection(memory.progress, [
-      'Verification'
-    ]);
+    // Handle empty patterns - create full template
+    if (!memory.patterns || memory.patterns.trim() === '') {
+      memory.patterns = DEFAULT_PATTERNS;
+    }
+
+    // Handle empty progress - create full template
+    if (!memory.progress || memory.progress.trim() === '') {
+      memory.progress = DEFAULT_PROGRESS;
+    }
 
     return memory;
   }
 
-  async updateActiveContext(ctx: PluginContext, updates: {
+  async updateActiveContext(input: any, updates: {
     recentChanges?: string[];
     decisions?: string[];
     learnings?: string[];
     nextSteps?: string[];
   }): Promise<void> {
-    const memory = await this.load(ctx);
+    const memory = await this.load(input);
     let content = memory.activeContext;
 
     // Update Recent Changes
@@ -201,16 +219,16 @@ export class MemoryManager {
       `## Last Updated\n${new Date().toISOString()}\n`
     );
 
-    await this.writeMemoryFile(ctx, MEMORY_FILES.activeContext, content);
+    await this.writeMemoryFile(input, MEMORY_FILES.activeContext, content);
   }
 
-  async updateProgress(ctx: PluginContext, updates: {
+  async updateProgress(input: any, updates: {
     currentWorkflow?: string;
     tasks?: string[];
     completed?: string[];
     verification?: string[];
   }): Promise<void> {
-    const memory = await this.load(ctx);
+    const memory = await this.load(input);
     let content = memory.progress;
 
     if (updates.currentWorkflow) {
@@ -235,15 +253,15 @@ export class MemoryManager {
       `## Last Updated\n${new Date().toISOString()}\n`
     );
 
-    await this.writeMemoryFile(ctx, MEMORY_FILES.progress, content);
+    await this.writeMemoryFile(input, MEMORY_FILES.progress, content);
   }
 
-  async updatePatterns(ctx: PluginContext, updates: {
+  async updatePatterns(input: any, updates: {
     commonGotchas?: string[];
     codeConventions?: string[];
     architectureDecisions?: string[];
   }): Promise<void> {
-    const memory = await this.load(ctx);
+    const memory = await this.load(input);
     let content = memory.patterns;
 
     if (updates.commonGotchas && updates.commonGotchas.length > 0) {
@@ -271,7 +289,7 @@ export class MemoryManager {
     this.pendingNotes.push(...notes);
   }
 
-  async persistAccumulatedNotes(ctx: PluginContext): Promise<void> {
+  async persistAccumulatedNotes(input: any): Promise<void> {
     if (this.pendingNotes.length === 0) return;
 
     // Categorize notes and distribute to appropriate files
@@ -290,39 +308,39 @@ export class MemoryManager {
     }
 
     if (learnings.length > 0) {
-      await this.updateActiveContext(ctx, { learnings });
+      await this.updateActiveContext(input, { learnings });
     }
 
     if (patterns.length > 0) {
-      await this.updatePatterns(ctx, { commonGotchas: patterns });
+      await this.updatePatterns(input, { commonGotchas: patterns });
     }
 
     if (verification.length > 0) {
-      await this.updateProgress(ctx, { verification });
+      await this.updateProgress(input, { verification });
     }
 
     this.pendingNotes = [];
   }
 
-  async saveCompactionCheckpoint(ctx: PluginContext): Promise<void> {
+  async saveCompactionCheckpoint(input: any): Promise<void> {
     // Save critical state before compaction
-    await this.persistAccumulatedNotes(ctx);
+    await this.persistAccumulatedNotes(input);
   }
 
-  private async writeMemoryFile(ctx: PluginContext, path: string, content: string): Promise<void> {
+  private async writeMemoryFile(input: any, path: string, content: string): Promise<void> {
     try {
       // Use Edit for existing files, Write for new ones
       try {
-        await ctx.readFile(path);
+        await readFile(input, path);
         // File exists, use Edit
-        const currentContent = await ctx.readFile(path);
-        await ctx.editFile(path, {
+        const currentContent = await readFile(input, path);
+        await editFile(input, {
           oldString: currentContent,
           newString: content
         });
       } catch {
         // File doesn't exist, use Write
-        await ctx.writeFile(path, content);
+        await writeFile(input, path, content);
       }
       
       // Update cache

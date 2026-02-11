@@ -1,4 +1,3 @@
-import type { PluginContext } from '@opencode-ai/plugin';
 import { WorkflowType } from './intent-detection';
 
 export interface TaskInfo {
@@ -26,7 +25,7 @@ class TaskOrchestrator {
   private activeWorkflows: Map<string, WorkflowTask> = new Map();
 
   async createWorkflowTask(
-    ctx: PluginContext, 
+    input: any, 
     options: {
       userRequest: string;
       intent: WorkflowType;
@@ -230,8 +229,8 @@ Parallel execution: code-reviewer and silent-failure-hunter can run simultaneous
     options: { subject: string; description: string; activeForm: string }
   ): Promise<TaskInfo> {
     try {
-      // Use OpenCode's TaskCreate tool
-      const result = await ctx.taskCreate({
+      // Use OpenCode's task creation via client
+      const result = await input.client.app.task.create({
         subject: options.subject,
         description: options.description,
         activeForm: options.activeForm
@@ -260,7 +259,7 @@ Parallel execution: code-reviewer and silent-failure-hunter can run simultaneous
   }
 
   async updateTaskStatus(
-    ctx: PluginContext, 
+    input: any, 
     taskId: string, 
     status: TaskInfo['status'], 
     result?: any
@@ -278,7 +277,7 @@ Parallel execution: code-reviewer and silent-failure-hunter can run simultaneous
     // Update OpenCode task if it's an OpenCode task ID
     if (taskId.startsWith('task_') || taskId.length > 20) {
       try {
-        await ctx.taskUpdate({
+        await input.client.app.task.update({
           taskId: taskId,
           status: status
         });
@@ -289,7 +288,7 @@ Parallel execution: code-reviewer and silent-failure-hunter can run simultaneous
   }
 
   async recordExecutionResult(
-    ctx: PluginContext,
+    input: any,
     result: { tool: string; command: string; exitCode: number; timestamp: string }
   ): Promise<void> {
     // Store execution results for verification
@@ -297,7 +296,7 @@ Parallel execution: code-reviewer and silent-failure-hunter can run simultaneous
     console.log(`📊 Recorded execution: ${result.tool} ${result.command} → exit ${result.exitCode}`);
   }
 
-  async getRunnableTasks(ctx: PluginContext): Promise<TaskInfo[]> {
+  async getRunnableTasks(input: any): Promise<TaskInfo[]> {
     const runnableTasks: TaskInfo[] = [];
 
     for (const workflow of this.activeWorkflows.values()) {

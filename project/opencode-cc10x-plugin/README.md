@@ -71,11 +71,11 @@ The plugin automatically configures the necessary agents. You can customize them
 ```json
 {
   "agent": {
-    "cc10x-component-builder": {
+    "component-builder": {
       "color": "green",
       "temperature": 0.3
     },
-    "cc10x-code-reviewer": {
+    "code-reviewer": {
       "color": "yellow", 
       "temperature": 0.1
     }
@@ -103,7 +103,7 @@ All cc10x agents can be configured in `opencode.json`:
 ```json
 {
   "agent": {
-    "cc10x-component-builder": {
+    "component-builder": {
       "description": "Builds features using TDD",
       "model": "anthropic/claude-sonnet-4-20250514",
       "temperature": 0.3,
