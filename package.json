@@ -1,0 +1,59 @@
+{
+  "name": "opencode-cc10x",
+  "version": "6.0.19",
+  "description": "OpenCode plugin that ports cc10x orchestration system from Claude Code with full compatibility",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist/",
+    "opencode.json",
+    "commands/",
+    "install.sh",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "bun build src/index.ts --outdir dist --target node",
+    "build:all": "bun run build:markdown && bun run build",
+    "build:markdown": "bun run build/convert-markdown-to-ts.ts",
+    "dev": "bun build --watch src/index.ts --outdir dist --target node",
+    "test": "bun test --coverage",
+    "test:watch": "bun test --watch",
+    "lint": "bun x tsc --noEmit",
+    "prepublishOnly": "bun run build:all",
+    "postinstall": "node dist/installer.js"
+  },
+  "keywords": [
+    "opencode",
+    "plugin",
+    "cc10x",
+    "orchestration",
+    "agents",
+    "tdd",
+    "workflow"
+  ],
+  "author": "OpenHands",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Chaim12345/cc10x"
+  },
+  "dependencies": {
+    "@opencode-ai/plugin": "^1.1.57"
+  },
+  "devDependencies": {
+    "bun-types": "latest",
+    "typescript": "^5.0.0",
+    "@types/node": "^20.0.0"
+  },
+  "peerDependencies": {
+    "opencode": ">=1.1.0"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "bun": ">=1.0.0"
+  },
+  "os": ["darwin", "linux", "win32"],
+  "cpu": ["x64", "arm64"]
+}
