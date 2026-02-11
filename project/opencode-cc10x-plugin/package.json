@@ -1,0 +1,42 @@
+{
+  "name": "opencode-cc10x",
+  "version": "6.0.18",
+  "description": "Intelligent orchestration plugin for OpenCode - port of cc10x from Claude Code",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "bun build src/index.ts --outdir dist --target node",
+    "dev": "bun build --watch src/index.ts --outdir dist --target node",
+    "test": "bun test",
+    "prepublishOnly": "bun run build"
+  },
+  "keywords": [
+    "opencode",
+    "plugin",
+    "cc10x",
+    "orchestration",
+    "agents",
+    "tdd",
+    "workflow"
+  ],
+  "author": "OpenHands",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-org/opencode-cc10x"
+  },
+  "dependencies": {
+    "@opencode-ai/plugin": "^0.8.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "@types/node": "^20.0.0"
+  },
+  "peerDependencies": {
+    "opencode": ">=0.8.0"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "bun": ">=1.0.0"
+  }
+}

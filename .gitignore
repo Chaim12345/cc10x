@@ -1,0 +1,34 @@
+# System files
+bash_events/
+conversations/
+lost+found/
+
+# OpenCode
+.claude/
+.opencode/
+node_modules/
+dist/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Build artifacts
+build/
+coverage/
+*.tsbuildinfo
