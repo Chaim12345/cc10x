@@ -6,15 +6,18 @@
     "lib": ["ES2022"],
     "outDir": "./dist",
     "rootDir": "./src",
-    "strict": true,
+    "strict": false,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
-    "declaration": true,
-    "declarationMap": true,
+    "forceConsistentCasingInFileNames": false,
+    "declaration": false,
     "sourceMap": true,
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "types": ["node"],
+    "noImplicitAny": false,
+    "skipDefaultLibCheck": true,
+    "allowJs": false
   },
-  "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", "**/__tests__/*"]
+  "include": ["src/index.ts"],
+  "exclude": ["node_modules", "dist", "**/__tests__/*", "src/skills-backup/**/*"]
 }

@@ -1,5 +1,4 @@
-// OpenCode cc10x Plugin - Simplified Implementation
-// This plugin provides intelligent orchestration for development tasks
+// Simple cc10x plugin for current OpenCode API (JavaScript version)
 
 // Intent detection keywords
 const INTENT_KEYWORDS = {
@@ -9,30 +8,13 @@ const INTENT_KEYWORDS = {
   PLAN: ['plan', 'design', 'architect', 'roadmap', 'strategy', 'spec', 'proposal', 'options', 'research']
 };
 
-type IntentType = keyof typeof INTENT_KEYWORDS;
-
-interface Workflow {
-  id: string;
-  intent: IntentType;
-  userRequest: string;
-  status: 'pending' | 'running' | 'completed' | 'failed';
-  tasks: Task[];
-  createdAt: string;
-  updatedAt: string;
-}
-
-interface Task {
-  id: string;
-  subject: string;
-  status: 'pending' | 'running' | 'completed' | 'failed';
-  result?: string;
-}
-
 class CC10xOrchestrator {
-  private workflows = new Map<string, Workflow>();
-  private memoryDir = '.claude/cc10x';
+  constructor() {
+    this.activeWorkflows = new Map();
+    this.memoryDir = '.claude/cc10x';
+  }
 
-  async initialize(input: any): Promise<void> {
+  async initialize(input) {
     try {
       await input.$`mkdir -p ${this.memoryDir}`;
       await input.$`mkdir -p docs/plans`;
@@ -42,10 +24,10 @@ class CC10xOrchestrator {
     }
   }
 
-  detectIntent(message: string): { intent: IntentType; confidence: number; keywords: string[] } {
+  detectIntent(message) {
     const lowerMessage = message.toLowerCase();
-    const scores: Record<string, number> = { BUILD: 0, DEBUG: 0, REVIEW: 0, PLAN: 0 };
-    const foundKeywords: string[] = [];
+    const scores = { BUILD: 0, DEBUG: 0, REVIEW: 0, PLAN: 0 };
+    const foundKeywords = [];
 
     for (const [intent, keywords] of Object.entries(INTENT_KEYWORDS)) {
       for (const keyword of keywords) {
@@ -57,11 +39,11 @@ class CC10xOrchestrator {
     }
 
     let maxScore = 0;
-    let bestIntent: IntentType = 'BUILD';
+    let bestIntent = 'BUILD';
     for (const [intent, score] of Object.entries(scores)) {
       if (score > maxScore) {
         maxScore = score;
-        bestIntent = intent as IntentType;
+        bestIntent = intent;
       }
     }
 
@@ -74,20 +56,20 @@ class CC10xOrchestrator {
     };
   }
 
-  isDevelopmentTask(message: string): boolean {
+  isDevelopmentTask(message) {
     const lowerMessage = message.toLowerCase();
     return Object.values(INTENT_KEYWORDS).some(keywords =>
       keywords.some(keyword => lowerMessage.includes(keyword))
     );
   }
 
-  async createWorkflow(input: any, userMessage: string, intentResult: ReturnType<this['detectIntent']>): Promise<Workflow> {
+  async createWorkflow(input, userMessage, intent) {
     const workflowId = `workflow-${Date.now()}`;
     const now = new Date().toISOString();
 
-    const workflow: Workflow = {
+    const workflow = {
       id: workflowId,
-      intent: intentResult.intent,
+      intent: intent.intent,
       userRequest: userMessage,
       status: 'running',
       tasks: [],
@@ -95,12 +77,12 @@ class CC10xOrchestrator {
       updatedAt: now
     };
 
-    this.workflows.set(workflowId, workflow);
-    await this.saveMemory(input, workflow);
+    this.activeWorkflows.set(workflowId, workflow);
+    await this.saveWorkflowMemory(input, workflow);
     return workflow;
   }
 
-  async executeWorkflow(input: any, workflow: Workflow): Promise<void> {
+  async executeWorkflow(input, workflow) {
     console.log(`\n🚀 Starting cc10x ${workflow.intent} workflow: ${workflow.userRequest}\n`);
 
     try {
@@ -120,18 +102,18 @@ class CC10xOrchestrator {
       }
 
       workflow.status = 'completed';
-      await this.saveMemory(input, workflow);
+      await this.saveWorkflowMemory(input, workflow);
       console.log(`✅ Workflow ${workflow.id} completed successfully`);
 
     } catch (error) {
       workflow.status = 'failed';
-      await this.saveMemory(input, workflow);
+      await this.saveWorkflowMemory(input, workflow);
       console.error(`❌ Workflow ${workflow.id} failed:`, error);
     }
   }
 
-  private async executeBuildWorkflow(input: any, workflow: Workflow): Promise<void> {
-    const tasks: Task[] = [
+  async executeBuildWorkflow(input, workflow) {
+    const tasks = [
       { id: `${workflow.id}-task-1`, subject: 'Analyze requirements and create plan', status: 'pending' },
       { id: `${workflow.id}-task-2`, subject: 'Write failing test (RED phase)', status: 'pending' },
       { id: `${workflow.id}-task-3`, subject: 'Implement minimal code (GREEN phase)', status: 'pending' },
@@ -140,23 +122,23 @@ class CC10xOrchestrator {
     ];
 
     workflow.tasks = tasks;
-    await this.saveMemory(input, workflow);
+    await this.saveWorkflowMemory(input, workflow);
 
     for (let i = 0; i < tasks.length; i++) {
       const task = tasks[i];
       task.status = 'running';
-      await this.saveMemory(input, workflow);
+      await this.saveWorkflowMemory(input, workflow);
 
       console.log(`🔨 Build task ${i + 1}/${tasks.length}: ${task.subject}`);
-      await this.simulateTask(input, task, workflow);
+      await this.simulateTaskExecution(input, task, workflow);
       
       task.status = 'completed';
-      await this.saveMemory(input, workflow);
+      await this.saveWorkflowMemory(input, workflow);
     }
   }
 
-  private async executeDebugWorkflow(input: any, workflow: Workflow): Promise<void> {
-    const tasks: Task[] = [
+  async executeDebugWorkflow(input, workflow) {
+    const tasks = [
       { id: `${workflow.id}-task-1`, subject: 'Investigate error logs and symptoms', status: 'pending' },
       { id: `${workflow.id}-task-2`, subject: 'Identify root cause', status: 'pending' },
       { id: `${workflow.id}-task-3`, subject: 'Implement fix', status: 'pending' },
@@ -165,23 +147,23 @@ class CC10xOrchestrator {
     ];
 
     workflow.tasks = tasks;
-    await this.saveMemory(input, workflow);
+    await this.saveWorkflowMemory(input, workflow);
 
     for (let i = 0; i < tasks.length; i++) {
       const task = tasks[i];
       task.status = 'running';
-      await this.saveMemory(input, workflow);
+      await this.saveWorkflowMemory(input, workflow);
 
       console.log(`🐛 Debug task ${i + 1}/${tasks.length}: ${task.subject}`);
-      await this.simulateTask(input, task, workflow);
+      await this.simulateTaskExecution(input, task, workflow);
       
       task.status = 'completed';
-      await this.saveMemory(input, workflow);
+      await this.saveWorkflowMemory(input, workflow);
     }
   }
 
-  private async executeReviewWorkflow(input: any, workflow: Workflow): Promise<void> {
-    const tasks: Task[] = [
+  async executeReviewWorkflow(input, workflow) {
+    const tasks = [
       { id: `${workflow.id}-task-1`, subject: 'Review code quality and patterns', status: 'pending' },
       { id: `${workflow.id}-task-2`, subject: 'Check for security issues', status: 'pending' },
       { id: `${workflow.id}-task-3`, subject: 'Validate error handling', status: 'pending' },
@@ -190,23 +172,23 @@ class CC10xOrchestrator {
     ];
 
     workflow.tasks = tasks;
-    await this.saveMemory(input, workflow);
+    await this.saveWorkflowMemory(input, workflow);
 
     for (let i = 0; i < tasks.length; i++) {
       const task = tasks[i];
       task.status = 'running';
-      await this.saveMemory(input, workflow);
+      await this.saveWorkflowMemory(input, workflow);
 
       console.log(`👀 Review task ${i + 1}/${tasks.length}: ${task.subject}`);
-      await this.simulateTask(input, task, workflow);
+      await this.simulateTaskExecution(input, task, workflow);
       
       task.status = 'completed';
-      await this.saveMemory(input, workflow);
+      await this.saveWorkflowMemory(input, workflow);
     }
   }
 
-  private async executePlanWorkflow(input: any, workflow: Workflow): Promise<void> {
-    const tasks: Task[] = [
+  async executePlanWorkflow(input, workflow) {
+    const tasks = [
       { id: `${workflow.id}-task-1`, subject: 'Analyze requirements and constraints', status: 'pending' },
       { id: `${workflow.id}-task-2`, subject: 'Research existing solutions', status: 'pending' },
       { id: `${workflow.id}-task-3`, subject: 'Design architecture and API', status: 'pending' },
@@ -215,27 +197,27 @@ class CC10xOrchestrator {
     ];
 
     workflow.tasks = tasks;
-    await this.saveMemory(input, workflow);
+    await this.saveWorkflowMemory(input, workflow);
 
     for (let i = 0; i < tasks.length; i++) {
       const task = tasks[i];
       task.status = 'running';
-      await this.saveMemory(input, workflow);
+      await this.saveWorkflowMemory(input, workflow);
 
       console.log(`📋 Plan task ${i + 1}/${tasks.length}: ${task.subject}`);
-      await this.simulateTask(input, task, workflow);
+      await this.simulateTaskExecution(input, task, workflow);
       
       task.status = 'completed';
-      await this.saveMemory(input, workflow);
+      await this.saveWorkflowMemory(input, workflow);
     }
   }
 
-  private async simulateTask(input: any, task: Task, workflow: Workflow): Promise<void> {
+  async simulateTaskExecution(input, task, workflow) {
     await new Promise(resolve => setTimeout(resolve, 1000));
     task.result = `Task completed using cc10x orchestration. Workflow: ${workflow.intent}`;
   }
 
-  async saveMemory(input: any, workflow: Workflow): Promise<void> {
+  async saveWorkflowMemory(input, workflow) {
     try {
       const memoryContent = `# cc10x Memory
 
@@ -260,24 +242,33 @@ ${new Date().toISOString()}
     }
   }
 
-  getActiveWorkflow(sessionID: string): Workflow | undefined {
-    return Array.from(this.workflows.values()).find(w => w.status === 'running');
+  async loadMemory(input) {
+    try {
+      const content = await input.readFile(`${this.memoryDir}/activeContext.md`);
+      return { content };
+    } catch {
+      return { content: '' };
+    }
+  }
+
+  getActiveWorkflow(sessionID) {
+    return Array.from(this.activeWorkflows.values()).find(w => w.status === 'running');
   }
 }
 
 // Main plugin function
-async function OpenCodeCC10xPlugin(input: any) {
-  console.log('🔌 OpenCode cc10x Plugin v6.0.19 initializing...');
+export async function OpenCodeCC10xPlugin(input) {
+  console.log('🔌 OpenCode cc10x Plugin v6.0.19 (JavaScript) initializing...');
 
   const orchestrator = new CC10xOrchestrator();
   await orchestrator.initialize(input);
 
   const hooks = {
-    'chat.message': async (msgInput: any, output: any) => {
+    'chat.message': async (msgInput, output) => {
       try {
         const userMessage = output.message.parts
-          .filter((part: any) => part.type === 'text')
-          .map((part: any) => part.text)
+          .filter(part => part.type === 'text')
+          .map(part => part.text)
           .join(' ');
         
         if (!userMessage.trim()) {
@@ -301,7 +292,7 @@ async function OpenCodeCC10xPlugin(input: any) {
       }
     },
 
-    'tool.execute.before': async (toolInput: any, toolOutput: any) => {
+    'tool.execute.before': async (toolInput, toolOutput) => {
       if (toolInput.tool === 'bash') {
         const command = toolInput.args?.command || '';
         if (command.includes('test') || command.includes('spec')) {
@@ -310,17 +301,17 @@ async function OpenCodeCC10xPlugin(input: any) {
       }
     },
 
-    'tool.execute.after': async (toolInput: any, toolOutput: any) => {
+    'tool.execute.after': async (toolInput, toolOutput) => {
       if (toolOutput.exitCode !== undefined) {
         console.log(`📈 cc10x: Tool ${toolInput.tool} exited with code ${toolOutput.exitCode}`);
       }
     },
 
-    'experimental.session.compacting': async (sessionInput: any, output: any) => {
+    'experimental.session.compacting': async (sessionInput, output) => {
       console.log('💾 cc10x: Session compaction, saving state...');
     },
 
-    'event': async (eventInput: any) => {
+    'event': async (eventInput) => {
       // Handle events if needed
     }
   };
@@ -333,13 +324,13 @@ async function OpenCodeCC10xPlugin(input: any) {
     tools: {
       'cc10x-status': {
         description: 'Get current cc10x orchestration status',
-        execute: async (args: any, context: any) => {
-          const activeWorkflows = Array.from(orchestrator['workflows'].values());
+        execute: async (args, context) => {
+          const activeWorkflows = Array.from(orchestrator.activeWorkflows.values());
           if (activeWorkflows.length === 0) {
             return '📭 No active workflows';
           }
           
-          const status = activeWorkflows.map((w: Workflow) => 
+          const status = activeWorkflows.map(w => 
             `🔄 ${w.id}: ${w.intent} - ${w.status} (${w.tasks.length} tasks)`
           ).join('\n');
           
@@ -351,7 +342,7 @@ async function OpenCodeCC10xPlugin(input: any) {
       {
         name: 'cc10x-orchestrate',
         description: 'Run cc10x intelligent orchestration for a development task',
-        execute: async (args: any, context: any) => {
+        execute: async (args, context) => {
           const request = args.request || args.task || args.prompt || '';
           if (!request.trim()) {
             return 'Please provide a task description. Usage: /cc10x-orchestrate <task description>';
@@ -370,14 +361,14 @@ async function OpenCodeCC10xPlugin(input: any) {
       {
         name: 'cc10x-status',
         description: 'Show current cc10x orchestration status',
-        execute: async (args: any, context: any) => {
-          const activeWorkflows = Array.from(orchestrator['workflows'].values());
+        execute: async (args, context) => {
+          const activeWorkflows = Array.from(orchestrator.activeWorkflows.values());
           if (activeWorkflows.length === 0) {
             return '📭 No active workflows';
           }
           
-          const status = activeWorkflows.map((w: Workflow) => 
-            `🔄 ${w.id}: ${w.intent} - ${w.status}\n   Request: ${w.userRequest.substring(0, 50)}...\n   Tasks: ${w.tasks.filter((t: Task) => t.status === 'completed').length}/${w.tasks.length} completed`
+          const status = activeWorkflows.map(w => 
+            `🔄 ${w.id}: ${w.intent} - ${w.status}\n   Request: ${w.userRequest.substring(0, 50)}...\n   Tasks: ${w.tasks.filter(t => t.status === 'completed').length}/${w.tasks.length} completed`
           ).join('\n\n');
           
           return `📊 Active cc10x workflows:\n\n${status}`;
