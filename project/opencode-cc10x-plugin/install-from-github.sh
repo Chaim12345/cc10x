@@ -6,7 +6,20 @@ REPO="${CC10X_REPO:-Chaim12345/cc10x}"
 REF="${CC10X_REF:-main}"
 RAW_BASE="https://raw.githubusercontent.com/${REPO}/${REF}/project/opencode-cc10x-plugin"
 TARBALL_URL="https://codeload.github.com/${REPO}/tar.gz/${REF}"
-CONFIG_BASE="${XDG_CONFIG_HOME:-${HOME}/.config}"
+OS_NAME="$(uname -s 2>/dev/null || echo unknown)"
+if [[ "${OS_NAME}" == MINGW* || "${OS_NAME}" == MSYS* || "${OS_NAME}" == CYGWIN* ]]; then
+  if [[ -n "${APPDATA:-}" ]]; then
+    if command -v cygpath >/dev/null 2>&1; then
+      CONFIG_BASE="$(cygpath -u "${APPDATA}")"
+    else
+      CONFIG_BASE="${APPDATA//\\//}"
+    fi
+  else
+    CONFIG_BASE="${HOME}/AppData/Roaming"
+  fi
+else
+  CONFIG_BASE="${XDG_CONFIG_HOME:-${HOME}/.config}"
+fi
 PLUGIN_DIR="${CONFIG_BASE}/opencode/plugins"
 CONFIG_DIR="${CONFIG_BASE}/opencode"
 CONFIG_FILE="${CONFIG_DIR}/opencode.json"

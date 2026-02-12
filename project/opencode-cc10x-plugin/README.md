@@ -58,6 +58,12 @@ USER REQUEST
 bash <(curl -fsSL https://raw.githubusercontent.com/Chaim12345/cc10x/main/project/opencode-cc10x-plugin/install-from-github.sh)
 ```
 
+Windows (PowerShell):
+
+```powershell
+irm https://raw.githubusercontent.com/Chaim12345/cc10x/main/project/opencode-cc10x-plugin/install-from-github.sh | bash
+```
+
 3. **Alternative package-manager install:**
 
 ```bash
