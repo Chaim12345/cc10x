@@ -231,10 +231,7 @@ export class MemoryManager {
     }
 
     // Update Last Updated timestamp
-    content = content.replace(
-      /## Last Updated\s*\n/,
-      `## Last Updated\n${new Date().toISOString()}\n`
-    );
+    content = this.replaceLastUpdated(content);
 
     await this.writeMemoryFile(input, this.memoryFiles.activeContext, content);
   }
@@ -265,10 +262,7 @@ export class MemoryManager {
     }
 
     // Update Last Updated timestamp
-    content = content.replace(
-      /## Last Updated\s*\n/,
-      `## Last Updated\n${new Date().toISOString()}\n`
-    );
+    content = this.replaceLastUpdated(content);
 
     await this.writeMemoryFile(input, this.memoryFiles.progress, content);
   }
@@ -294,10 +288,7 @@ export class MemoryManager {
     }
 
     // Update Last Updated timestamp
-    content = content.replace(
-      /## Last Updated\s*\n/,
-      `## Last Updated\n${new Date().toISOString()}\n`
-    );
+    content = this.replaceLastUpdated(content);
 
     await this.writeMemoryFile(input, this.memoryFiles.patterns, content);
   }
@@ -408,8 +399,40 @@ export class MemoryManager {
   }
 
   private replaceOrAppendToSection(content: string, sectionHeader: string, newItems: string[]): string {
-    // Similar to appendToSection but replaces existing content
-    return this.appendToSection(content, sectionHeader, newItems);
+    const lines = content.split('\n');
+    const sectionLineIndex = lines.findIndex(line => line.includes(sectionHeader));
+    const replacementItems = newItems.map(item => `- [${new Date().toISOString().split('T')[0]}] ${item}`);
+
+    if (sectionLineIndex === -1) {
+      const lastUpdatedIndex = content.lastIndexOf('## Last Updated');
+      if (lastUpdatedIndex !== -1) {
+        return content.slice(0, lastUpdatedIndex) +
+               `${sectionHeader}\n${replacementItems.join('\n')}\n\n` +
+               content.slice(lastUpdatedIndex);
+      }
+      return `${content}\n${sectionHeader}\n${replacementItems.join('\n')}\n`;
+    }
+
+    let nextSectionIndex = sectionLineIndex + 1;
+    while (nextSectionIndex < lines.length && !lines[nextSectionIndex].startsWith('##')) {
+      nextSectionIndex++;
+    }
+
+    lines.splice(sectionLineIndex + 1, nextSectionIndex - (sectionLineIndex + 1), ...replacementItems);
+    return lines.join('\n');
+  }
+
+  private replaceLastUpdated(content: string): string {
+    const nextStamp = `${new Date().toISOString()}`;
+    const withBlockReplace = content.replace(
+      /## Last Updated\s*\n(?:[^\n]*\n)?/,
+      `## Last Updated\n${nextStamp}\n`
+    );
+
+    if (withBlockReplace === content) {
+      return `${content.trimEnd()}\n\n## Last Updated\n${nextStamp}\n`;
+    }
+    return withBlockReplace;
   }
 
   clearCache(): void {

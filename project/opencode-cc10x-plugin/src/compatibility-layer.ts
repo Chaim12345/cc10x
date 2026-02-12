@@ -127,14 +127,18 @@ export function isPermissionFreeOperation(tool: string, args: any): boolean {
   
   if (tool === 'write' && args?.filePath) {
     // Write is permission-free for any file in a memory directory (for new files).
-    return memoryDirs.some((dir) => args.filePath.includes(`${dir}/`));
+    const filePath = String(args.filePath).replace(/\\/g, '/');
+    return memoryDirs.some((dir) => filePath.includes(`${dir}/`) || filePath === dir);
   }
   
   if (tool === 'bash' && args?.command) {
     const command = args.command;
     // mkdir for memory directory is permission-free
     if (command === 'mkdir' && args.args?.includes('-p') && 
-        args.args?.some((arg: string) => memoryDirs.some((dir) => arg.includes(dir)))) {
+        args.args?.some((arg: string) => {
+          const normalizedArg = String(arg).replace(/\\/g, '/');
+          return memoryDirs.some((dir) => normalizedArg.includes(dir));
+        })) {
       return true;
     }
   }

@@ -45,8 +45,8 @@ export async function cc10xRouter(input: any): Promise<RouterHooks> {
         // Check for active workflow to resume
         const activeWorkflow = await checkForActiveWorkflow(input);
         if (activeWorkflow) {
-          await resumeWorkflow(activeWorkflow, userMessage, input);
-          return;
+          const handled = await resumeWorkflow(activeWorkflow, userMessage, input);
+          if (handled) return;
         }
 
         // Load memory for new workflow
@@ -68,7 +68,7 @@ export async function cc10xRouter(input: any): Promise<RouterHooks> {
           intent,
           userRequest: userMessage,
           memory: memory,
-          workflowTaskId: workflowTask.id,
+          workflowTaskId: workflowTask.workflowId || workflowTask.id,
           activeForm: getActiveFormForIntent(intent, userMessage)
         });
 
@@ -230,9 +230,9 @@ async function checkForActiveWorkflow(ctx: any): Promise<WorkflowState | null> {
   };
 }
 
-async function resumeWorkflow(workflow: WorkflowState, userMessage: string, _ctx: any): Promise<void> {
-  // Resume an existing workflow
-  // Implementation would depend on task state
+async function resumeWorkflow(_workflow: WorkflowState, _userMessage: string, _ctx: any): Promise<boolean> {
+  // Resume path is not implemented yet; return false so message processing continues.
+  return false;
 }
 
 function extractMemoryNotes(result: any): string[] {

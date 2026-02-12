@@ -2,6 +2,7 @@ import { WorkflowType } from './intent-detection';
 
 export interface TaskInfo {
   id: string;
+  workflowId?: string;
   subject: string;
   description: string;
   status: 'pending' | 'in_progress' | 'completed' | 'blocked';
@@ -13,6 +14,7 @@ export interface TaskInfo {
 
 export interface WorkflowTask {
   id: string;
+  openCodeTaskId?: string;
   type: WorkflowType;
   userRequest: string;
   memory: any;
@@ -63,8 +65,8 @@ class TaskOrchestrator {
       activeForm: `Starting ${options.intent} workflow`
     });
 
-    // Update workflow with OpenCode task ID
-    workflow.tasks[0].id = parentTask.id;
+    // Keep workflow task IDs stable for dependency tracking; store OpenCode parent task separately.
+    workflow.openCodeTaskId = parentTask.id;
 
     console.log(`📋 Created workflow ${workflowId} with ${tasks.length} tasks`);
     return workflow.tasks[0];
@@ -84,6 +86,7 @@ class TaskOrchestrator {
         tasks.push(
           {
             id: `${workflowId}-builder`,
+            workflowId,
             subject: 'CC10X component-builder: Implement feature',
             description: `Build feature with TDD: ${userRequest}\n\nPlan: ${this.extractPlanFile(memory) || 'N/A'}`,
             status: 'pending',
@@ -92,6 +95,7 @@ class TaskOrchestrator {
           },
           {
             id: `${workflowId}-reviewer`,
+            workflowId,
             subject: 'CC10X code-reviewer: Review implementation',
             description: 'Review code quality, patterns, security',
             status: 'pending',
@@ -101,6 +105,7 @@ class TaskOrchestrator {
           },
           {
             id: `${workflowId}-hunter`,
+            workflowId,
             subject: 'CC10X silent-failure-hunter: Hunt edge cases',
             description: 'Find silent failures and edge cases',
             status: 'pending',
@@ -110,6 +115,7 @@ class TaskOrchestrator {
           },
           {
             id: `${workflowId}-verifier`,
+            workflowId,
             subject: 'CC10X integration-verifier: Verify implementation',
             description: 'End-to-end validation of the implementation',
             status: 'pending',
@@ -124,6 +130,7 @@ class TaskOrchestrator {
         tasks.push(
           {
             id: `${workflowId}-investigator`,
+            workflowId,
             subject: 'CC10X bug-investigator: Investigate issue',
             description: `Debug issue with log-first approach: ${userRequest}`,
             status: 'pending',
@@ -132,6 +139,7 @@ class TaskOrchestrator {
           },
           {
             id: `${workflowId}-reviewer`,
+            workflowId,
             subject: 'CC10X code-reviewer: Validate fix',
             description: 'Review fix for correctness and quality',
             status: 'pending',
@@ -141,6 +149,7 @@ class TaskOrchestrator {
           },
           {
             id: `${workflowId}-verifier`,
+            workflowId,
             subject: 'CC10X integration-verifier: Verify fix',
             description: 'Verify the fix resolves the issue',
             status: 'pending',
@@ -155,6 +164,7 @@ class TaskOrchestrator {
         tasks.push(
           {
             id: `${workflowId}-reviewer`,
+            workflowId,
             subject: 'CC10X code-reviewer: Comprehensive review',
             description: `Review code with 80%+ confidence: ${userRequest}`,
             status: 'pending',
@@ -168,6 +178,7 @@ class TaskOrchestrator {
         tasks.push(
           {
             id: `${workflowId}-planner`,
+            workflowId,
             subject: 'CC10X planner: Create comprehensive plan',
             description: `Create detailed plan: ${userRequest}`,
             status: 'pending',
@@ -181,6 +192,7 @@ class TaskOrchestrator {
     // Add memory update task (workflow-final)
     tasks.push({
       id: `${workflowId}-memory-update`,
+      workflowId,
       subject: 'CC10X Memory Update',
       description: 'Persist workflow learnings to memory bank',
       status: 'pending',

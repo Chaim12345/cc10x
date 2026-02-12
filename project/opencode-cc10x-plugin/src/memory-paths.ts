@@ -4,7 +4,11 @@ export const OPENCODE_MEMORY_DIR = '.opencode/cc10x';
 export const LEGACY_MEMORY_DIR = '.claude/cc10x';
 
 function sanitizeMemoryDir(value: string): string {
-  return value.replace(/\\/g, '/').replace(/\/+$/, '');
+  const normalized = value.replace(/\\/g, '/').replace(/\/+$/, '');
+  if (!normalized || normalized === '.' || normalized === '..') {
+    return OPENCODE_MEMORY_DIR;
+  }
+  return normalized;
 }
 
 export function getPreferredMemoryDir(): string {
@@ -34,5 +38,8 @@ export function buildMemoryFiles(memoryDir: string) {
 
 export function isMemoryPath(filePath: string): boolean {
   const normalized = filePath.replace(/\\/g, '/');
-  return getKnownMemoryDirs().some((dir) => normalized.includes(`${dir}/`));
+  return getKnownMemoryDirs().some((dir) => {
+    const prefix = `${dir}/`;
+    return normalized.includes(prefix) || normalized === dir;
+  });
 }
