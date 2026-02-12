@@ -64,11 +64,18 @@ Windows (PowerShell):
 irm https://raw.githubusercontent.com/Chaim12345/cc10x/main/project/opencode-cc10x-plugin/install-from-github.mjs | node
 ```
 
-3. **Alternative package-manager install:**
+3. **Alternative package-manager install (GitHub Packages):**
+
+First, configure auth:
 
 ```bash
-npm add opencode-cc10x
-bun add opencode-cc10x
+npm config set @chaim12345:registry https://npm.pkg.github.com
+npm config set //npm.pkg.github.com/:_authToken <GITHUB_TOKEN>
+```
+
+```bash
+npm add @chaim12345/opencode-cc10x
+bun add @chaim12345/opencode-cc10x
 ```
 
 If you are testing locally before publishing, install from a tarball:

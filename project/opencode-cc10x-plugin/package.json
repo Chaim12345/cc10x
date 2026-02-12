@@ -1,5 +1,5 @@
 {
-  "name": "opencode-cc10x",
+  "name": "@chaim12345/opencode-cc10x",
   "version": "6.0.18",
   "description": "Intelligent orchestration plugin for OpenCode - port of cc10x from Claude Code",
   "main": "dist/index.js",
@@ -24,7 +24,10 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/your-org/opencode-cc10x"
+    "url": "https://github.com/Chaim12345/cc10x.git"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
   },
   "dependencies": {},
   "devDependencies": {
