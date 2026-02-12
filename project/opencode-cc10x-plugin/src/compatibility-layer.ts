@@ -3,8 +3,12 @@
 
 export async function readFile(input: any, path: string): Promise<string> {
   try {
+    // Test/runtime compatibility: prefer direct mock methods when available.
+    if (typeof input?.readFile === 'function') {
+      return await input.readFile(path);
+    }
     // Use OpenCode's read tool via client
-    const result = await input.client.app.fs.read(path);
+    const result = await input.client?.app?.fs?.read(path);
     return result as string;
   } catch (error: any) {
     if (error.code === 'ENOENT' || error.message?.includes('not found')) {
@@ -16,8 +20,12 @@ export async function readFile(input: any, path: string): Promise<string> {
 
 export async function writeFile(input: any, path: string, content: string): Promise<void> {
   try {
+    if (typeof input?.writeFile === 'function') {
+      await input.writeFile(path, content);
+      return;
+    }
     // Use OpenCode's write tool via client
-    await input.client.app.fs.write(path, content);
+    await input.client?.app?.fs?.write(path, content);
   } catch (error) {
     console.error(`Failed to write file ${path}:`, error);
     throw error;
@@ -29,8 +37,12 @@ export async function editFile(input: any, path: string, options: {
   newString: string;
 }): Promise<void> {
   try {
+    if (typeof input?.editFile === 'function') {
+      await input.editFile(path, options);
+      return;
+    }
     // Use OpenCode's edit tool via client
-    await input.client.app.fs.edit(path, options);
+    await input.client?.app?.fs?.edit(path, options);
   } catch (error) {
     console.error(`Failed to edit file ${path}:`, error);
     throw error;
@@ -39,6 +51,14 @@ export async function editFile(input: any, path: string, options: {
 
 export async function mkdir(input: any, ...args: string[]): Promise<void> {
   try {
+    if (typeof input?.bash === 'function') {
+      const dir = args[0] || args.join(' ');
+      const result = await input.bash('mkdir', ['-p', dir]);
+      if (result.exitCode !== 0) {
+        throw new Error(`mkdir failed: ${result.stderr}`);
+      }
+      return;
+    }
     // Use OpenCode's shell ($) for mkdir - execute as tagged template
     const $ = input.$;
     if (typeof $ === 'function') {
@@ -65,6 +85,9 @@ export async function bash(input: any, command: string, args: string[] = []): Pr
   stderr: string;
 }> {
   try {
+    if (typeof input?.bash === 'function') {
+      return await input.bash(command, args);
+    }
     const $ = input.$;
     if (typeof $ !== 'function') {
       throw new Error('Shell not available');

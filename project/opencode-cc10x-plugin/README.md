@@ -52,19 +52,31 @@ USER REQUEST
 }
 ```
 
-2. **Install the plugin:**
+2. **Install the plugin (single command, no clone):**
 
 ```bash
-# The plugin will be automatically installed via npm on next OpenCode startup
-# Or install manually:
+bash <(curl -fsSL https://raw.githubusercontent.com/Chaim12345/cc10x/opencode-unified-structure/project/opencode-cc10x-plugin/install-from-github.sh)
+```
+
+3. **Alternative package-manager install:**
+
+```bash
+npm add opencode-cc10x
 bun add opencode-cc10x
 ```
 
-3. **Set up cc10x memory directory:**
+If you are testing locally before publishing, install from a tarball:
+
+```bash
+npm pack
+npm add ./opencode-cc10x-<version>.tgz
+```
+
+4. **Set up cc10x memory directory:**
 
 The plugin will automatically create `.claude/cc10x/` on first use.
 
-4. **Configure agents (optional):**
+5. **Configure agents (optional):**
 
 The plugin automatically configures the necessary agents. You can customize them in your `opencode.json`:
 

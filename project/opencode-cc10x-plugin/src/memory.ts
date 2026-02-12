@@ -1,4 +1,4 @@
-import { readFile, writeFile, editFile, mkdir } from './compatibility-layer';
+import { readFile, writeFile, editFile } from './compatibility-layer';
 
 export interface CC10XMemory {
   activeContext: string;
@@ -83,7 +83,7 @@ ${new Date().toISOString()}
 `;
 
 export class MemoryManager {
-  private ctx: PluginContext | null = null;
+  private ctx: any | null = null;
   private memoryCache: CC10XMemory | null = null;
   private pendingNotes: string[] = [];
 
@@ -282,10 +282,10 @@ export class MemoryManager {
       `## Last Updated\n${new Date().toISOString()}\n`
     );
 
-    await this.writeMemoryFile(ctx, MEMORY_FILES.patterns, content);
+    await this.writeMemoryFile(input, MEMORY_FILES.patterns, content);
   }
 
-  async accumulateNotes(ctx: PluginContext, notes: string[]): Promise<void> {
+  async accumulateNotes(_ctx: any, notes: string[]): Promise<void> {
     this.pendingNotes.push(...notes);
   }
 

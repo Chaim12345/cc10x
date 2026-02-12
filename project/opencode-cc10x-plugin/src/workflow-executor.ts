@@ -58,7 +58,7 @@ export class WorkflowExecutor {
 
     // Step 1: component-builder (TDD)
     await this.invokeAgent(input, {
-      agentName: 'component-builder',
+      agentName: 'cc10x-component-builder',
       taskId: `${workflowTaskId}-builder`,
       prompt: this.buildBuilderPrompt(userRequest, memory),
       waitForCompletion: true
@@ -66,7 +66,7 @@ export class WorkflowExecutor {
 
     // Step 2: Parallel execution - code-reviewer and silent-failure-hunter
     await this.invokeParallelAgents(input, {
-      agentNames: ['code-reviewer', 'silent-failure-hunter'],
+      agentNames: ['cc10x-code-reviewer', 'cc10x-silent-failure-hunter'],
       baseTaskId: workflowTaskId,
       sharedPrompt: this.buildReviewAndHuntPrompt(userRequest, memory),
       waitForCompletion: true
@@ -74,7 +74,7 @@ export class WorkflowExecutor {
 
     // Step 3: integration-verifier
     await this.invokeAgent(input, {
-      agentName: 'integration-verifier',
+      agentName: 'cc10x-integration-verifier',
       taskId: `${workflowTaskId}-verifier`,
       prompt: await this.buildVerifierPrompt(input, workflowTaskId),
       waitForCompletion: true
@@ -89,7 +89,7 @@ export class WorkflowExecutor {
 
     // Step 1: bug-investigator (log-first)
     await this.invokeAgent(input, {
-      agentName: 'bug-investigator',
+      agentName: 'cc10x-bug-investigator',
       taskId: `${workflowTaskId}-investigator`,
       prompt: this.buildDebugPrompt(userRequest, memory),
       waitForCompletion: true
@@ -97,7 +97,7 @@ export class WorkflowExecutor {
 
     // Step 2: code-reviewer (validate fix)
     await this.invokeAgent(input, {
-      agentName: 'code-reviewer',
+      agentName: 'cc10x-code-reviewer',
       taskId: `${workflowTaskId}-reviewer`,
       prompt: this.buildReviewFixPrompt(userRequest, memory),
       waitForCompletion: true
@@ -105,7 +105,7 @@ export class WorkflowExecutor {
 
     // Step 3: integration-verifier
     await this.invokeAgent(input, {
-      agentName: 'integration-verifier',
+      agentName: 'cc10x-integration-verifier',
       taskId: `${workflowTaskId}-verifier`,
       prompt: await this.buildVerifierPrompt(input, workflowTaskId),
       waitForCompletion: true
@@ -120,7 +120,7 @@ export class WorkflowExecutor {
 
     // Single step: code-reviewer
     await this.invokeAgent(input, {
-      agentName: 'code-reviewer',
+      agentName: 'cc10x-code-reviewer',
       taskId: `${workflowTaskId}-reviewer`,
       prompt: this.buildReviewPrompt(userRequest, memory),
       waitForCompletion: true
@@ -135,7 +135,7 @@ export class WorkflowExecutor {
 
     // Single step: planner
     await this.invokeAgent(input, {
-      agentName: 'planner',
+      agentName: 'cc10x-planner',
       taskId: `${workflowTaskId}-planner`,
       prompt: this.buildPlanPrompt(userRequest, memory),
       waitForCompletion: true
@@ -177,10 +177,18 @@ export class WorkflowExecutor {
       await taskOrchestrator.updateTaskStatus(input, taskId, 'in_progress');
 
       // Invoke the agent using OpenCode's agent system
-      const result = await input.client.app.agent.invoke(agentName, {
-        prompt: prompt,
-        taskId: taskId
-      });
+      let result: any;
+      if (typeof input?.invokeAgent === 'function') {
+        result = await input.invokeAgent(agentName, {
+          prompt: prompt,
+          taskId: taskId
+        });
+      } else {
+        result = await input.client.app.agent.invoke(agentName, {
+          prompt: prompt,
+          taskId: taskId
+        });
+      }
 
       // Update task status to completed
       await taskOrchestrator.updateTaskStatus(input, taskId, 'completed', result);
@@ -502,7 +510,7 @@ Create a comprehensive plan that includes:
     // Update memory with failure
     await memoryManager.updateActiveContext(input, {
       recentChanges: [`Workflow ${workflowTaskId} failed: ${error.message}`],
-      blockers: [`Workflow failure: ${error.message}`]
+      nextSteps: [`Investigate workflow failure: ${error.message}`]
     });
 
     // Could create TODO task for remediation
