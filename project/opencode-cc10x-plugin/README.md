@@ -2,50 +2,15 @@
 
 **The Intelligent Orchestrator for OpenCode**
 
-A native OpenCode orchestration plugin providing intelligent workflow automation, TDD enforcement, and multi-agent coordination.
+**Notice: Credit to the original cc10x project and maintainers. This repository is a fork; changes here are limited to OpenCode compatibility and runtime adaptation.**
 
-Current release: `6.0.24`
+cc10x is a native OpenCode orchestration plugin that routes development requests into structured workflows (build/debug/review/plan) using specialized OpenCode agents.
 
-## Features
+Package: `opencode-cc10x` (npm)
 
-- **Automatic Intent Detection** - Router automatically detects BUILD, DEBUG, REVIEW, or PLAN intents
-- **6 Specialized Agents** - Component builder, bug investigator, code reviewer, silent failure hunter, integration verifier, planner
-- **12 Supporting Skills** - Session memory, TDD enforcement, code generation, debugging patterns, and more
-- **Task-Based Orchestration** - Uses OpenCode's Task system for coordinated multi-agent workflows
-- **Memory Persistence** - Survives context compaction with .opencode/cc10x/ memory bank
-- **Parallel Execution** - Code reviewer and silent failure hunter run simultaneously
-- **Confidence Scoring** - 80%+ threshold for issue reporting
-- **TDD Enforcement** - RED → GREEN → REFACTOR cycle with exit code verification
+## Quickstart
 
-## Architecture
-
-```
-USER REQUEST
-    │
-    ▼
-┌─────────────────────────────────────────────────────────────────┐
-│  cc10x-router (OpenCode Plugin)                                 │
-│  ├─ Intent Detection                                           │
-│  ├─ Memory Loading (.opencode/cc10x/)                          │
-│  ├─ Task Hierarchy Creation                                    │
-│  └─ Workflow Orchestration                                     │
-└─────────────────────────────────────────────────────────────────┘
-    │
-    ├─ BUILD → component-builder → [code-reviewer ∥ silent-failure-hunter] → integration-verifier
-    ├─ DEBUG → bug-investigator → code-reviewer → integration-verifier
-    ├─ REVIEW → code-reviewer
-    └─ PLAN → planner
-```
-
-## Installation
-
-### Prerequisites
-- OpenCode installed and configured
-- Node.js/Bun available for plugin dependencies
-
-### Steps
-
-1. **Add the plugin to your OpenCode configuration:**
+1) Add the plugin to your OpenCode config (`~/.config/opencode/opencode.json`):
 
 ```json
 {
@@ -54,15 +19,73 @@ USER REQUEST
 }
 ```
 
-2. **Install the plugin (recommended):**
+2) Install the npm package:
+
+```bash
+npm add opencode-cc10x
+# or
+bun add opencode-cc10x
+```
+
+To pin a specific version:
 
 ```bash
 npm add opencode-cc10x@6.0.24
-# or
-bun add opencode-cc10x@6.0.24
 ```
 
-3. **Alternative one-command install (no clone):**
+3) Restart OpenCode.
+
+4) If you do not see commands, run:
+
+```bash
+npx opencode-cc10x init
+```
+
+## Usage
+
+Type a normal dev task; cc10x routes it automatically:
+
+- "build a settings page with tests"
+- "debug this failing CI job"
+- "review this diff for security"
+- "plan a migration strategy"
+
+Or use the explicit command: `/cc10x-orchestrate <your task>`.
+
+## What You Get
+
+- **Automatic intent detection**: BUILD / DEBUG / REVIEW / PLAN
+- **6 cc10x agents**: `cc10x-component-builder`, `cc10x-bug-investigator`, `cc10x-code-reviewer`, `cc10x-silent-failure-hunter`, `cc10x-integration-verifier`, `cc10x-planner`
+- **Skills bundle**: session memory, TDD discipline, planning patterns, debugging patterns, review patterns
+- **Parallel execution**: reviewer + silent failure hunter run in parallel for BUILD
+- **Persistent memory**: `.opencode/cc10x/` survives compaction and keeps work resumable
+
+## How It Works
+
+```
+User message
+  -> cc10x router
+    -> loads `.opencode/cc10x/*`
+    -> chooses workflow
+    -> runs subagents (and parallel steps when needed)
+    -> updates `.opencode/cc10x/*` with evidence/notes
+```
+
+## Commands
+
+The installer writes command files into `~/.config/opencode/commands/`:
+
+- `cc10x-orchestrate`
+- `cc10x-build`
+- `cc10x-debug`
+- `cc10x-review`
+- `cc10x-plan`
+
+If you customize these files, re-running `npx opencode-cc10x init --commands-only` will not overwrite content, but it may apply safe migrations.
+
+## Alternative Install (No npm/bun)
+
+This installs directly from GitHub without cloning:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Chaim12345/cc10x/main/project/opencode-cc10x-plugin/install-from-github.mjs | node
@@ -74,79 +97,36 @@ Windows (PowerShell):
 irm https://raw.githubusercontent.com/Chaim12345/cc10x/main/project/opencode-cc10x-plugin/install-from-github.mjs | node
 ```
 
-If commands do not appear in OpenCode, run:
-
-```bash
-npx opencode-cc10x init
-```
-
-If you are testing locally before publishing, install from a tarball:
-
-```bash
-npm pack
-npm add ./opencode-cc10x-<version>.tgz
-```
-
-4. **Set up cc10x memory directory:**
-
-The plugin will automatically create `.opencode/cc10x/` on first use.
-
-5. **Configure agents (optional):**
-
-The plugin automatically configures the necessary agents. You can customize them in your `opencode.json`:
-
-```json
-{
-  "agent": {
-    "cc10x-component-builder": {
-      "color": "#00ff00",
-      "temperature": 0.3
-    },
-    "cc10x-code-reviewer": {
-      "color": "#ffff00", 
-      "temperature": 0.1
-    }
-  }
-}
-```
-
-## Usage
-
-Once installed, cc10x automatically activates for development tasks:
-
-- **"Build a user authentication system"** → Triggers BUILD workflow
-- **"Debug the payment error"** → Triggers DEBUG workflow  
-- **"Review this PR for security issues"** → Triggers REVIEW workflow
-- **"Plan the database schema"** → Triggers PLAN workflow
-
-The router handles all orchestration automatically - no manual skill selection needed.
-
 ## Configuration
 
-### Agent Customization
+### Agent Settings
 
-All cc10x agents can be configured in `opencode.json`:
+You can override the bundled agent defaults in `~/.config/opencode/opencode.json`:
 
 ```json
 {
   "agent": {
     "cc10x-component-builder": {
-      "description": "Builds features using TDD",
-      "model": "inherit",
       "temperature": 0.3,
-      "tools": {
-        "write": true,
-        "edit": true,
-        "bash": true
-      }
+      "model": "inherit"
+    },
+    "cc10x-code-reviewer": {
+      "temperature": 0.1,
+      "model": "inherit"
     }
   }
 }
 ```
+
+Notes:
+
+- cc10x commands and agents are set to inherit your main/default model unless you override them here.
 
 ### Permissions
 
-The plugin follows OpenCode's builtin permission model. If your environment prompts more than expected, set explicit global allow in your local `opencode.json`:
+cc10x follows OpenCode's builtin permission model.
+
+If you want a zero-prompt local dev setup, set global allow:
 
 ```json
 {
@@ -156,113 +136,49 @@ The plugin follows OpenCode's builtin permission model. If your environment prom
 }
 ```
 
-### Skill Permissions
+## Memory
 
-cc10x skills are automatically loaded. Control access with:
-
-```json
-{
-  "permission": {
-    "skill": {
-      "cc10x:*": "allow"
-    }
-  }
-}
-```
-
-## Memory System
-
-cc10x uses `.opencode/cc10x/` for persistent memory:
+cc10x stores persistent memory in:
 
 ```
 .opencode/cc10x/
-├── activeContext.md   # Current focus, decisions, learnings
-├── patterns.md        # Project conventions, common gotchas
-└── progress.md        # Completed work, verification evidence
+├── activeContext.md
+├── patterns.md
+└── progress.md
 ```
 
-This memory survives context compaction and enables:
-- Continuity across sessions
-- Pattern learning and reuse
-- Resumable workflows
-- Decision tracking
-
-## Workflows
-
-### BUILD Workflow
-1. **component-builder** - Implements feature with TDD
-2. **code-reviewer** + **silent-failure-hunter** (parallel) - Quality and edge case analysis
-3. **integration-verifier** - End-to-end validation
-
-### DEBUG Workflow  
-1. **bug-investigator** - Log-first investigation
-2. **code-reviewer** - Fix validation
-3. **integration-verifier** - Verification
-
-### REVIEW Workflow
-1. **code-reviewer** - Comprehensive code analysis with 80%+ confidence
-
-### PLAN Workflow
-1. **planner** - Creates detailed plans with research
-
-## Development
-
-### Building the Plugin
-
-```bash
-cd opencode-cc10x-plugin
-bun install
-bun build
-```
-
-### Testing
-
-```bash
-# Run plugin tests
-bun test
-
-# Test with OpenCode
-opencode --plugin ./dist/
-```
+This directory is created in your current project/workspace root.
 
 ## Compatibility
 
 - **Plugin Version**: `6.0.24`
 - **OpenCode Plugin API**: `@opencode-ai/plugin` `^1.1.60`
-- **OpenCode**: latest stable release recommended
 - **Node.js**: 18+
 - **Bun**: 1.0+
 
+To confirm what you have installed:
+
+```bash
+npm view opencode-cc10x version
+```
+
+## Development
+
+```bash
+bun install
+bun test
+npm run build
+```
+
 ## Troubleshooting
 
-### Plugin not loading
-- Check OpenCode version compatibility
-- Verify plugin is in `opencode.json` plugins list
-- Check `~/.config/opencode/plugins/` for installation
-
-### Agents not available
-- Run `opencode agent list` to see available agents
-- Check agent configuration in `opencode.json`
-- Restart OpenCode after plugin installation
-
-### Memory issues
-- Ensure `.opencode/cc10x/` directory exists and is writable
-- Check file permissions
-- Plugin will auto-create missing files with templates
-
-## Contributing
-
-For issues or enhancements:
-
-1. Check existing issues
-2. Keep behavior aligned with OpenCode plugin patterns
-3. Maintain the core cc10x principles and workflows
-4. Test with both simple and complex development tasks
+- **Commands missing**: `npx opencode-cc10x init`
+- **Agents missing**: restart OpenCode, then run `opencode agent list`
+- **Plugin not loading**: verify `"plugin": ["opencode-cc10x"]` in `~/.config/opencode/opencode.json`
+- **Memory not updating**: ensure `.opencode/cc10x/` is writable
 
 ## License
 
 MIT
 
-## Acknowledgments
-
-- OpenCode team for the plugin system
+**Notice: Credit to the original cc10x project and maintainers. This repository is a fork; changes here are limited to OpenCode compatibility and runtime adaptation.**
