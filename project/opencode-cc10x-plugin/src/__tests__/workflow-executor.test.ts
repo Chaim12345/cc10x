@@ -4,7 +4,15 @@ import { taskOrchestrator } from '../task-orchestrator';
 import { memoryManager } from '../memory';
 
 // Mock PluginContext
-const createMockContext = () => ({
+const createMockContext = () => {
+  const calls = {
+    taskUpdates: [] as Array<{ taskId: string; status: string }>,
+    invokedAgents: [] as Array<{ agentName: string; taskId: string }>,
+    edits: [] as Array<{ path: string; newString: string }>,
+  };
+
+  return {
+    calls,
   readFile: async (path: string): Promise<string> => {
     if (path.includes('activeContext')) {
       return `# Active Context
@@ -33,6 +41,7 @@ const createMockContext = () => ({
     console.log(`Mock write: ${path}`);
   },
   editFile: async (path: string, options: { oldString: string; newString: string }): Promise<void> => {
+    calls.edits.push({ path, newString: options.newString });
     console.log(`Mock edit: ${path}`);
   },
   bash: async (command: string, args: string[]): Promise<{ exitCode: number; stdout: string; stderr: string }> => {
@@ -48,16 +57,19 @@ const createMockContext = () => ({
     return { taskId: `task_${Date.now()}_${Math.random().toString(36).substr(2, 9)}` };
   },
   taskUpdate: async (options: any): Promise<void> => {
+    calls.taskUpdates.push({ taskId: options.taskId, status: options.status });
     console.log(`Mock task update: ${options.taskId} -> ${options.status}`);
   },
   invokeAgent: async (agentName: string, options: any): Promise<any> => {
+    calls.invokedAgents.push({ agentName, taskId: options.taskId });
     console.log(`Mock invoke agent: ${agentName}`);
     return { 
       result: `Agent ${agentName} completed successfully`,
       status: 'completed'
     };
   }
-});
+};
+};
 
 describe('WorkflowExecutor', () => {
   let executor: WorkflowExecutor;
@@ -84,8 +96,17 @@ describe('WorkflowExecutor', () => {
         activeForm: 'Building user authentication'
       });
 
-      // Should complete without errors
-      expect(true).toBe(true);
+      expect(mockCtx.calls.invokedAgents[0].agentName).toBe('cc10x-component-builder');
+      expect(mockCtx.calls.invokedAgents[mockCtx.calls.invokedAgents.length - 1].agentName).toBe('cc10x-integration-verifier');
+      expect(mockCtx.calls.invokedAgents.map((x: any) => x.agentName)).toEqual(
+        expect.arrayContaining([
+          'cc10x-component-builder',
+          'cc10x-code-reviewer',
+          'cc10x-silent-failure-hunter',
+          'cc10x-integration-verifier',
+        ])
+      );
+      expect(mockCtx.calls.edits.some((e: any) => e.path.includes('progress.md'))).toBe(true);
     });
 
     it('should execute DEBUG workflow with correct agent sequence', async () => {
@@ -97,7 +118,11 @@ describe('WorkflowExecutor', () => {
         activeForm: 'Debugging payment error'
       });
 
-      expect(true).toBe(true);
+      expect(mockCtx.calls.invokedAgents.map((x: any) => x.agentName)).toEqual([
+        'cc10x-bug-investigator',
+        'cc10x-code-reviewer',
+        'cc10x-integration-verifier',
+      ]);
     });
 
     it('should execute REVIEW workflow with single agent', async () => {
@@ -109,7 +134,9 @@ describe('WorkflowExecutor', () => {
         activeForm: 'Reviewing code for security'
       });
 
-      expect(true).toBe(true);
+      expect(mockCtx.calls.invokedAgents.map((x: any) => x.agentName)).toEqual([
+        'cc10x-code-reviewer',
+      ]);
     });
 
     it('should execute PLAN workflow with single agent', async () => {
@@ -121,7 +148,9 @@ describe('WorkflowExecutor', () => {
         activeForm: 'Planning database schema'
       });
 
-      expect(true).toBe(true);
+      expect(mockCtx.calls.invokedAgents.map((x: any) => x.agentName)).toEqual([
+        'cc10x-planner',
+      ]);
     });
 
     it('should handle workflow errors gracefully', async () => {
@@ -141,8 +170,10 @@ describe('WorkflowExecutor', () => {
         activeForm: 'Building (expected to fail)'
       });
 
-      // Should handle error and continue
-      expect(true).toBe(true);
+      expect(mockCtx.calls.taskUpdates).toEqual(
+        expect.arrayContaining([{ taskId: 'test-fail-001-builder', status: 'blocked' }])
+      );
+      expect(mockCtx.calls.edits.some((e: any) => e.path.includes('activeContext.md'))).toBe(true);
     });
   });
 
