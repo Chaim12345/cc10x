@@ -1,3 +1,5 @@
+import { getKnownMemoryDirs, isMemoryPath } from './memory-paths';
+
 // Compatibility layer for cc10x helper I/O on OpenCode
 // These wrap OpenCode's native tools with cc10x-expected interfaces
 
@@ -113,31 +115,26 @@ export async function bash(input: any, command: string, args: string[] = []): Pr
 // Permission checking utilities
 export function isPermissionFreeOperation(tool: string, args: any): boolean {
   // Memory operations are permission-free in cc10x
-  const memoryPaths = [
-    '.opencode/cc10x/activeContext.md',
-    '.opencode/cc10x/patterns.md',
-    '.opencode/cc10x/progress.md'
-  ];
+  const memoryDirs = getKnownMemoryDirs();
   
   if (tool === 'read' && args?.filePath) {
-    return memoryPaths.some(path => args.filePath.includes(path));
+    return isMemoryPath(args.filePath);
   }
   
   if (tool === 'edit' && args?.filePath) {
-    return memoryPaths.some(path => args.filePath.includes(path));
+    return isMemoryPath(args.filePath);
   }
   
   if (tool === 'write' && args?.filePath) {
-    // Write is permission-free for any file in memory directory (for new files)
-    // Since we can't check existence, we'll allow writes to any .opencode/cc10x/ path
-    return args.filePath.includes('.opencode/cc10x/');
+    // Write is permission-free for any file in a memory directory (for new files).
+    return memoryDirs.some((dir) => args.filePath.includes(`${dir}/`));
   }
   
   if (tool === 'bash' && args?.command) {
     const command = args.command;
     // mkdir for memory directory is permission-free
     if (command === 'mkdir' && args.args?.includes('-p') && 
-        args.args?.some((arg: string) => arg.includes('.opencode/cc10x'))) {
+        args.args?.some((arg: string) => memoryDirs.some((dir) => arg.includes(dir)))) {
       return true;
     }
   }

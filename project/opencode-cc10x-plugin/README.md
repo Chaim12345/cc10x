@@ -149,6 +149,17 @@ cc10x stores persistent memory in:
 
 This directory is created in your current project/workspace root.
 
+Compatibility behavior:
+
+- Auto-detect priority: `.opencode/cc10x/` first, then `.claude/cc10x/`
+- You can force a specific memory directory with `CC10X_MEMORY_DIR`
+
+Example:
+
+```bash
+CC10X_MEMORY_DIR=.claude/cc10x opencode
+```
+
 ## Compatibility
 
 - **Plugin Version**: `6.0.24`

@@ -3,7 +3,7 @@ type SkillDefinition = any;
 export const skillDefinitions: SkillDefinition[] = [
   {
     name: 'cc10x-session-memory',
-    description: 'MANDATORY: Load and update .opencode/cc10x/ memory files. All cc10x agents use this for persistence.',
+    description: 'MANDATORY: Load and update cc10x memory files. All cc10x agents use this for persistence.',
     license: 'MIT',
     compatibility: 'opencode',
     metadata: {
@@ -21,18 +21,18 @@ EVERY WORKFLOW MUST:
 **Brevity Rule:** Memory is an index, not a document. Be brief—one line per item.
 
 ## Memory Surfaces (Types)
-1. **Index / Working Memory**: .opencode/cc10x/activeContext.md
+1. **Index / Working Memory**: <cc10x-memory-dir>/activeContext.md
    - "What matters right now": focus, next steps, active decisions, learnings
    - Links to durable artifacts (plans/research)
-2. **Long-Term Project Memory**: .opencode/cc10x/patterns.md
+2. **Long-Term Project Memory**: <cc10x-memory-dir>/patterns.md
    - Conventions, architecture decisions, common gotchas, reusable solutions
-3. **Progress + Evidence Memory**: .opencode/cc10x/progress.md
+3. **Progress + Evidence Memory**: <cc10x-memory-dir>/progress.md
    - What's done/remaining + verification evidence (commands + exit codes)
 4. **Artifact Memory (Durable)**: docs/plans/*, docs/research/*
 5. **Tasks (Execution State)**: OpenCode Tasks
 
 ## Permission-Free Operations
-- Create memory directory: Bash(command="mkdir -p .opencode/cc10x")
+- Create memory directory: Bash(command="mkdir -p <cc10x-memory-dir>")
 - **Read memory files**: Read tool (FREE)
 - **Create NEW memory file**: Write tool (FREE if file doesn't exist)
 - **Update EXISTING memory**: Edit tool (FREE - no permission prompt)
@@ -40,10 +40,10 @@ EVERY WORKFLOW MUST:
 **CRITICAL: Use Write for NEW files, Edit for UPDATES.**
 
 ## At Workflow START (REQUIRED)
-1. Bash(command="mkdir -p .opencode/cc10x")
-2. Read(file_path=".opencode/cc10x/activeContext.md")
-3. Read(file_path=".opencode/cc10x/patterns.md")
-4. Read(file_path=".opencode/cc10x/progress.md")
+1. Bash(command="mkdir -p <cc10x-memory-dir>")
+2. Read(file_path="<cc10x-memory-dir>/activeContext.md")
+3. Read(file_path="<cc10x-memory-dir>/patterns.md")
+4. Read(file_path="<cc10x-memory-dir>/progress.md")
 
 ## At Workflow END (REQUIRED)
 Use Edit tool (NO permission prompt) to update:
@@ -1983,14 +1983,14 @@ When frontend patterns are established or discovered:
 ## Adaptation Strategy
 
 ### Memory Location
-Keep same location for compatibility:
-- \`.opencode/cc10x/activeContext.md\`
-- \`.opencode/cc10x/patterns.md\`
-- \`.opencode/cc10x/progress.md\`
+Memory directory selection for compatibility:
+- Preferred: \`.opencode/cc10x/*\`
+- Fallback: \`.claude/cc10x/*\`
+- Override: environment variable \`CC10X_MEMORY_DIR\`
 
 ### Permission-Free Operations
 Ensure these operations don't ask permission:
-- Creating memory directory: \`mkdir -p .opencode/cc10x\`
+- Creating memory directory: \`mkdir -p <resolved-memory-dir>\`
 - Reading memory files: \`Read(file_path="...")\`
 - Writing new memory files: \`Write(file_path="...", content="...")\`
 - Editing existing memory: \`Edit(file_path="...", old_string="...", new_string="...")\`
@@ -2025,7 +2025,7 @@ Use OpenCode plugin hooks:
 ## Migration from legacy cc10x runtime
 
 ### Existing Memory Files
-- Copy .opencode/cc10x/ directory to project
+- Copy existing memory directory to your project (either .opencode/cc10x or .claude/cc10x)
 - Files are compatible as-is
 - Plugin will auto-heal missing sections
 - No conversion needed
@@ -2049,7 +2049,7 @@ Use OpenCode plugin hooks:
 {
   "permission": {
     "bash": {
-      "mkdir -p .opencode/cc10x": "allow",
+      "mkdir -p *": "allow",
       "git status": "allow",
       "git diff": "allow"
     },

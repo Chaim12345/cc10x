@@ -1,5 +1,6 @@
 import { detectIntent, WorkflowType } from './intent-detection';
 import { memoryManager } from './memory';
+import { isMemoryPath } from './memory-paths';
 import { taskOrchestrator } from './task-orchestrator';
 import { workflowExecutor } from './workflow-executor';
 
@@ -201,12 +202,7 @@ function isTestCommand(command?: string): boolean {
 
 function isMemoryOperation(input: ToolInput): boolean {
   const filePath = input.args?.filePath || '';
-  const memoryPaths = [
-    '.opencode/cc10x/activeContext.md',
-    '.opencode/cc10x/patterns.md', 
-    '.opencode/cc10x/progress.md'
-  ];
-  return memoryPaths.some(path => filePath.includes(path));
+  return isMemoryPath(filePath);
 }
 
 async function enforceTDDRequirements(_ctx: any, _input: ToolInput): Promise<void> {

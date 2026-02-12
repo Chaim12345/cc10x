@@ -12,6 +12,7 @@ describe('Compatibility Layer', () => {
       expect(isPermissionFreeOperation('read', { filePath: '.opencode/cc10x/activeContext.md' })).toBe(true);
       expect(isPermissionFreeOperation('read', { filePath: '.opencode/cc10x/patterns.md' })).toBe(true);
       expect(isPermissionFreeOperation('read', { filePath: '.opencode/cc10x/progress.md' })).toBe(true);
+      expect(isPermissionFreeOperation('read', { filePath: '.claude/cc10x/activeContext.md' })).toBe(true);
     });
 
     it('should identify memory file writes as permission-free for new files', () => {

@@ -1,4 +1,5 @@
 import { readFile, writeFile, editFile } from './compatibility-layer';
+import { buildMemoryFiles, getKnownMemoryDirs, getPreferredMemoryDir } from './memory-paths';
 
 export interface CC10XMemory {
   activeContext: string;
@@ -6,13 +7,6 @@ export interface CC10XMemory {
   progress: string;
   lastUpdated: string;
 }
-
-const MEMORY_DIR = '.opencode/cc10x';
-const MEMORY_FILES = {
-  activeContext: `${MEMORY_DIR}/activeContext.md`,
-  patterns: `${MEMORY_DIR}/patterns.md`,
-  progress: `${MEMORY_DIR}/progress.md`
-};
 
 const DEFAULT_ACTIVE_CONTEXT = `# Active Context
 
@@ -86,9 +80,15 @@ export class MemoryManager {
   private ctx: any | null = null;
   private memoryCache: CC10XMemory | null = null;
   private pendingNotes: string[] = [];
+  private memoryDir = getPreferredMemoryDir();
+
+  private get memoryFiles() {
+    return buildMemoryFiles(this.memoryDir);
+  }
 
   async initialize(input: any): Promise<void> {
     this.ctx = input;
+    this.memoryDir = getPreferredMemoryDir();
     await this.ensureDirectory(input);
   }
 
@@ -99,7 +99,7 @@ export class MemoryManager {
       if (typeof $ !== 'function') {
         throw new Error('Shell not available');
       }
-      const result = await $`mkdir -p ${MEMORY_DIR}`;
+      const result = await $`mkdir -p ${this.memoryDir}`;
       if (result.exitCode !== 0) {
         throw new Error(`mkdir failed: ${result.stderr.toString()}`);
       }
@@ -122,14 +122,31 @@ export class MemoryManager {
     };
 
     try {
-      // Try to read each memory file
-      for (const [key, path] of Object.entries(MEMORY_FILES)) {
+      const preferredFiles = this.memoryFiles;
+      const fallbackFiles = getKnownMemoryDirs().map((dir) => buildMemoryFiles(dir));
+
+      // Try to read each memory file from preferred location, then fall back to legacy path.
+      for (const [key, preferredPath] of Object.entries(preferredFiles)) {
         try {
-          const content = await readFile(input, path);
+          const content = await readFile(input, preferredPath);
           memory[key as keyof CC10XMemory] = content;
-        } catch (error) {
-          // File doesn't exist - will create with defaults
-          console.log(`Memory file ${path} not found, will create template`);
+          continue;
+        } catch {}
+
+        let loaded = false;
+        for (const files of fallbackFiles) {
+          const candidate = files[key as keyof typeof files] as string;
+          if (candidate === preferredPath) continue;
+          try {
+            const content = await readFile(input, candidate);
+            memory[key as keyof CC10XMemory] = content;
+            loaded = true;
+            break;
+          } catch {}
+        }
+
+        if (!loaded) {
+          console.log(`Memory file ${preferredPath} not found, will create template`);
         }
       }
     } catch (error) {
@@ -219,7 +236,7 @@ export class MemoryManager {
       `## Last Updated\n${new Date().toISOString()}\n`
     );
 
-    await this.writeMemoryFile(input, MEMORY_FILES.activeContext, content);
+    await this.writeMemoryFile(input, this.memoryFiles.activeContext, content);
   }
 
   async updateProgress(input: any, updates: {
@@ -253,7 +270,7 @@ export class MemoryManager {
       `## Last Updated\n${new Date().toISOString()}\n`
     );
 
-    await this.writeMemoryFile(input, MEMORY_FILES.progress, content);
+    await this.writeMemoryFile(input, this.memoryFiles.progress, content);
   }
 
   async updatePatterns(input: any, updates: {
@@ -282,7 +299,7 @@ export class MemoryManager {
       `## Last Updated\n${new Date().toISOString()}\n`
     );
 
-    await this.writeMemoryFile(input, MEMORY_FILES.patterns, content);
+    await this.writeMemoryFile(input, this.memoryFiles.patterns, content);
   }
 
   async accumulateNotes(_ctx: any, notes: string[]): Promise<void> {

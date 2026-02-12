@@ -36,7 +36,7 @@ const createMockContext = () => ({
     console.log(`Mock edit: ${path}`);
   },
   bash: async (command: string, args: string[]): Promise<{ exitCode: number; stdout: string; stderr: string }> => {
-    if (command === 'mkdir' && args.includes('-p') && args.some(arg => arg.includes('.opencode/cc10x'))) {
+    if (command === 'mkdir' && args.includes('-p') && args.some(arg => arg.includes('/cc10x'))) {
       return { exitCode: 0, stdout: '', stderr: '' };
     }
     if (command === 'npm' && args[0] === 'test') {
