@@ -55,7 +55,7 @@ USER REQUEST
 2. **Install the plugin (single command, no clone):**
 
 ```bash
-bash <(curl -fsSL https://raw.githubusercontent.com/Chaim12345/cc10x/opencode-unified-structure/project/opencode-cc10x-plugin/install-from-github.sh)
+bash <(curl -fsSL https://raw.githubusercontent.com/Chaim12345/cc10x/main/project/opencode-cc10x-plugin/install-from-github.sh)
 ```
 
 3. **Alternative package-manager install:**
