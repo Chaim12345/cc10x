@@ -6,16 +6,22 @@ REPO="${CC10X_REPO:-Chaim12345/cc10x}"
 REF="${CC10X_REF:-main}"
 RAW_BASE="https://raw.githubusercontent.com/${REPO}/${REF}/project/opencode-cc10x-plugin"
 TARBALL_URL="https://codeload.github.com/${REPO}/tar.gz/${REF}"
-PLUGIN_DIR="${HOME}/.config/opencode/plugins"
-CONFIG_DIR="${HOME}/.config/opencode"
+CONFIG_BASE="${XDG_CONFIG_HOME:-${HOME}/.config}"
+PLUGIN_DIR="${CONFIG_BASE}/opencode/plugins"
+CONFIG_DIR="${CONFIG_BASE}/opencode"
 CONFIG_FILE="${CONFIG_DIR}/opencode.json"
 PLUGIN_NAME="opencode-cc10x"
 
 echo "Installing ${PLUGIN_NAME} from GitHub (${REPO}@${REF})..."
 
-if ! command -v opencode >/dev/null 2>&1; then
-  echo "OpenCode is not installed or not in PATH."
+if [[ "${HOME}" == /tmp/* ]] && [[ "${CC10X_ALLOW_TMP_HOME:-0}" != "1" ]]; then
+  echo "Refusing to install into temporary HOME (${HOME})."
+  echo "Run with your real user environment, or set CC10X_ALLOW_TMP_HOME=1 for testing."
   exit 1
+fi
+
+if ! command -v opencode >/dev/null 2>&1; then
+  echo "OpenCode binary not found in PATH; continuing with plugin/config installation."
 fi
 
 if ! command -v curl >/dev/null 2>&1; then
