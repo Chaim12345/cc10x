@@ -1,4 +1,4 @@
-import type { AgentDefinition } from '@opencode-ai/plugin';
+type AgentDefinition = any;
 
 export const agentDefinitions: AgentDefinition[] = [
   {

@@ -87,19 +87,91 @@ function findPluginDir(rootDir) {
   return null;
 }
 
-function upsertConfig(configFile, pluginName) {
+function isPlainObject(v) {
+  return Boolean(v && typeof v === "object" && !Array.isArray(v));
+}
+
+function deepMerge(target, source) {
+  if (!isPlainObject(target) || !isPlainObject(source)) return target;
+  for (const [k, sv] of Object.entries(source)) {
+    const tv = target[k];
+    if (tv === undefined) {
+      target[k] = sv;
+      continue;
+    }
+    if (Array.isArray(tv) && Array.isArray(sv)) {
+      const set = new Set(tv);
+      for (const item of sv) set.add(item);
+      target[k] = Array.from(set);
+      continue;
+    }
+    if (isPlainObject(tv) && isPlainObject(sv)) {
+      deepMerge(tv, sv);
+    }
+  }
+  return target;
+}
+
+function upsertConfig(configFile, pluginName, bundledConfig) {
   let cfg = {};
   if (existsSync(configFile)) {
     try {
       cfg = JSON.parse(readFileSync(configFile, "utf8"));
-    } catch {
-      cfg = {};
+    } catch (err) {
+      const detail = err instanceof Error ? err.message : String(err);
+      fail(`Refusing to modify invalid JSON at ${configFile}. Fix this file first. Parse error: ${detail}`);
     }
   }
   if (!Array.isArray(cfg.plugin)) cfg.plugin = [];
   if (!cfg.plugin.includes(pluginName)) cfg.plugin.push(pluginName);
   if (!cfg.$schema) cfg.$schema = "https://opencode.ai/config.json";
+  if (bundledConfig && isPlainObject(bundledConfig)) {
+    deepMerge(cfg, bundledConfig);
+  }
   writeFileSync(configFile, `${JSON.stringify(cfg, null, 2)}\n`);
+}
+
+function writeCommands(commandsDir) {
+  mkdirSync(commandsDir, { recursive: true });
+
+  const files = [
+    {
+      name: "cc10x-orchestrate.md",
+      content: `---\ndescription: Intelligent orchestration system for development tasks with multi-agent workflows\nagent: cc10x-planner\n---\n\nRun cc10x intelligent orchestration for this development task:\n\n$ARGUMENTS\n\nThis will automatically detect the intent and orchestrate the appropriate workflow with multiple specialized agents.\n`,
+    },
+    {
+      name: "cc10x-build.md",
+      content: `---\ndescription: Build features using TDD cycle (RED -> GREEN -> REFACTOR)\nagent: cc10x-component-builder\n---\n\nBuild this feature using TDD:\n\n$ARGUMENTS\n\nFollow the TDD cycle strictly:\n1. RED: Write a failing test first\n2. GREEN: Write minimal code to pass\n3. REFACTOR: Clean up while keeping tests green\n4. VERIFY: All tests must pass\n`,
+    },
+    {
+      name: "cc10x-debug.md",
+      content: `---\ndescription: Investigate and fix bugs with log-first approach\nagent: cc10x-bug-investigator\n---\n\nDebug this issue:\n\n$ARGUMENTS\n\nUse a log-first approach to:\n1. Identify the root cause\n2. Find all related error logs\n3. Propose fixes with evidence\n4. Implement the solution\n`,
+    },
+    {
+      name: "cc10x-review.md",
+      content: `---\ndescription: Comprehensive code review with 80%+ confidence threshold\nagent: cc10x-code-reviewer\n---\n\nReview this code:\n\n$ARGUMENTS\n\nPerform a comprehensive code review with 80%+ confidence threshold:\n- Check for bugs and security issues\n- Verify code quality and best practices\n- Suggest improvements\n- Only approve if confidence is high\n`,
+    },
+    {
+      name: "cc10x-plan.md",
+      content: `---\ndescription: Create detailed plans with research and architecture design\nagent: cc10x-planner\n---\n\nCreate a comprehensive plan for:\n\n$ARGUMENTS\n\nInclude:\n- Research phase\n- Architecture design\n- Implementation steps\n- Risk assessment\n- Timeline estimates\n`,
+    },
+  ];
+
+  for (const f of files) {
+    const target = path.join(commandsDir, f.name);
+    if (!existsSync(target)) {
+      writeFileSync(target, f.content);
+      continue;
+    }
+    const current = readFileSync(target, "utf8");
+    const migrated = current
+      .replace(/(^|\n)agent:\s*planner(\n|$)/g, "$1agent: cc10x-planner$2")
+      .replace(/(^|\n)agent:\s*component-builder(\n|$)/g, "$1agent: cc10x-component-builder$2")
+      .replace(/(^|\n)agent:\s*bug-investigator(\n|$)/g, "$1agent: cc10x-bug-investigator$2")
+      .replace(/(^|\n)agent:\s*code-reviewer(\n|$)/g, "$1agent: cc10x-code-reviewer$2")
+      .replace(/(^|\n)model:\s*anthropic\/claude-sonnet-4-20250514(\n|$)/g, "$1");
+    if (migrated !== current) writeFileSync(target, migrated);
+  }
 }
 
 async function main() {
@@ -143,9 +215,18 @@ async function main() {
   }
 
   if (!installed) fail("Installation failed.");
-  upsertConfig(configFile, PLUGIN_NAME);
+  let bundledConfig = null;
+  try {
+    bundledConfig = JSON.parse(await downloadText(`${RAW_BASE}/opencode.json`));
+  } catch (err) {
+    log(`Warning: could not load bundled opencode.json (${err instanceof Error ? err.message : String(err)}). Continuing with plugin registration only.`);
+  }
+
+  upsertConfig(configFile, PLUGIN_NAME, bundledConfig);
+  writeCommands(path.join(configDir, "commands"));
 
   log(`Installed ${PLUGIN_NAME} to ${pluginFile}`);
+  log(`Installed cc10x commands to ${path.join(configDir, "commands")}`);
   log("Restart OpenCode to load the plugin.");
 }
 

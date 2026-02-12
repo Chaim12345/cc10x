@@ -1,8 +1,18 @@
-import type { PluginContext, ToolInput, ToolOutput } from '@opencode-ai/plugin';
 import { detectIntent, WorkflowType } from './intent-detection';
 import { memoryManager } from './memory';
 import { taskOrchestrator } from './task-orchestrator';
 import { workflowExecutor } from './workflow-executor';
+
+type ToolInput = {
+  tool?: string;
+  args?: Record<string, any>;
+  [key: string]: any;
+};
+
+type ToolOutput = {
+  exitCode?: number;
+  [key: string]: any;
+};
 
 export interface RouterHooks {
   messageReceived: (input: ToolInput, output: ToolOutput) => Promise<void>;
@@ -15,13 +25,10 @@ export interface RouterHooks {
   manualInvoke: (args: any, context: any) => Promise<string>;
 }
 
-export async function cc10xRouter(input: any): Promise<{ routerHooks: RouterHooks }> {
+export async function cc10xRouter(input: any): Promise<RouterHooks> {
   
   // Initialize memory system with shell access
   await memoryManager.initialize(input);
-  
-  // State tracking
-  const activeWorkflows = new Map<string, WorkflowState>();
   
   const routerHooks: RouterHooks = {
     // Main message interceptor - this is where cc10x magic happens
@@ -45,18 +52,19 @@ export async function cc10xRouter(input: any): Promise<{ routerHooks: RouterHook
         const memory = await memoryManager.load(input);
         
         // Detect user intent
-        const intent = detectIntent(userMessage, memory);
+        const intentResult = detectIntent(userMessage, memory);
+        const intent = intentResult.intent;
         
         // Create task hierarchy
         const workflowTask = await taskOrchestrator.createWorkflowTask(input, {
           userRequest: userMessage,
-          intent: intent,
+          intent,
           memory: memory
         });
 
         // Execute appropriate workflow
         await workflowExecutor.executeWorkflow(input, {
-          intent: intent,
+          intent,
           userRequest: userMessage,
           memory: memory,
           workflowTaskId: workflowTask.id,
@@ -95,8 +103,8 @@ export async function cc10xRouter(input: any): Promise<{ routerHooks: RouterHook
       // Capture exit codes for verification
       if (output.exitCode !== undefined) {
         await taskOrchestrator.recordExecutionResult(input, {
-          tool: input.tool,
-          command: input.args?.command,
+          tool: input.tool || 'unknown',
+          command: String(input.args?.command || ''),
           exitCode: output.exitCode,
           timestamp: new Date().toISOString()
         });
@@ -144,24 +152,18 @@ export async function cc10xRouter(input: any): Promise<{ routerHooks: RouterHook
       console.log(`🚀 Manual cc10x invocation: ${request}`);
       
       // Create a synthetic message event and process it through the router
-      const syntheticMessage = {
-        id: `manual-${Date.now()}`,
-        content: request,
-        role: 'user',
-        timestamp: new Date().toISOString()
-      };
-      
       try {
-        await routerHooks.messageReceived(context, syntheticMessage);
+        await routerHooks.messageReceived({ args: { message: request }, ...context }, {});
         return `✅ cc10x orchestration started for: ${request}`;
       } catch (error) {
         console.error('Manual invocation failed:', error);
-        return `❌ cc10x orchestration failed: ${error.message}`;
+        const message = error instanceof Error ? error.message : String(error);
+        return `❌ cc10x orchestration failed: ${message}`;
       }
     }
   };
 
-  return { routerHooks };
+  return routerHooks;
 }
 
 // Helper functions
@@ -207,23 +209,32 @@ function isMemoryOperation(input: ToolInput): boolean {
   return memoryPaths.some(path => filePath.includes(path));
 }
 
-async function enforceTDDRequirements(ctx: PluginContext, input: ToolInput): Promise<void> {
+async function enforceTDDRequirements(_ctx: any, _input: ToolInput): Promise<void> {
   // This would enforce TDD cycle - placeholder for now
   // In full implementation, would track test phases
 }
 
-async function validateMemoryOperation(ctx: PluginContext, input: ToolInput): Promise<void> {
+async function validateMemoryOperation(_ctx: any, _input: ToolInput): Promise<void> {
   // Ensure memory operations are permission-free
   // In full implementation, would validate Edit vs Write usage
 }
 
-async function checkForActiveWorkflow(ctx: PluginContext): Promise<WorkflowState | null> {
-  // Check if there's an active cc10x workflow to resume
-  // This would integrate with OpenCode's task system
-  return null; // Placeholder
+async function checkForActiveWorkflow(ctx: any): Promise<WorkflowState | null> {
+  const active = await taskOrchestrator.checkForActiveWorkflows(ctx);
+  if (!active) {
+    return null;
+  }
+
+  return {
+    id: active.id,
+    type: active.type,
+    status: 'in_progress',
+    startedAt: active.createdAt,
+    userRequest: active.userRequest
+  };
 }
 
-async function resumeWorkflow(workflow: WorkflowState, userMessage: string, ctx: PluginContext): Promise<void> {
+async function resumeWorkflow(workflow: WorkflowState, userMessage: string, _ctx: any): Promise<void> {
   // Resume an existing workflow
   // Implementation would depend on task state
 }

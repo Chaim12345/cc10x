@@ -459,7 +459,7 @@ ${(/* @__PURE__ */ new Date()).toISOString()}
       try {
         await readFile(input, path);
         const currentContent = await readFile(input, path);
-        await editFile(input, {
+        await editFile(input, path, {
           oldString: currentContent,
           newString: content
         });
@@ -1195,7 +1195,6 @@ var workflowExecutor = new WorkflowExecutor();
 // src/router.ts
 async function cc10xRouter(input) {
   await memoryManager.initialize(input);
-  const activeWorkflows = /* @__PURE__ */ new Map();
   const routerHooks = {
     // Main message interceptor - this is where cc10x magic happens
     messageReceived: async (input2, output) => {
@@ -1210,7 +1209,8 @@ async function cc10xRouter(input) {
           return;
         }
         const memory = await memoryManager.load(input2);
-        const intent = detectIntent(userMessage, memory);
+        const intentResult = detectIntent(userMessage, memory);
+        const intent = intentResult.intent;
         const workflowTask = await taskOrchestrator.createWorkflowTask(input2, {
           userRequest: userMessage,
           intent,
@@ -1244,8 +1244,8 @@ async function cc10xRouter(input) {
     toolExecuteAfter: async (input2, output) => {
       if (output.exitCode !== void 0) {
         await taskOrchestrator.recordExecutionResult(input2, {
-          tool: input2.tool,
-          command: input2.args?.command,
+          tool: input2.tool || "unknown",
+          command: String(input2.args?.command || ""),
           exitCode: output.exitCode,
           timestamp: (/* @__PURE__ */ new Date()).toISOString()
         });
@@ -1278,22 +1278,17 @@ async function cc10xRouter(input) {
         return "Please provide a task description.";
       }
       console.log(`\u{1F680} Manual cc10x invocation: ${request}`);
-      const syntheticMessage = {
-        id: `manual-${Date.now()}`,
-        content: request,
-        role: "user",
-        timestamp: (/* @__PURE__ */ new Date()).toISOString()
-      };
       try {
-        await routerHooks.messageReceived(context, syntheticMessage);
+        await routerHooks.messageReceived({ args: { message: request }, ...context }, {});
         return `\u2705 cc10x orchestration started for: ${request}`;
       } catch (error) {
         console.error("Manual invocation failed:", error);
-        return `\u274C cc10x orchestration failed: ${error.message}`;
+        const message = error instanceof Error ? error.message : String(error);
+        return `\u274C cc10x orchestration failed: ${message}`;
       }
     }
   };
-  return { routerHooks };
+  return routerHooks;
 }
 function isDevelopmentIntent(message) {
   const devKeywords = [
@@ -1365,14 +1360,24 @@ function isMemoryOperation(input) {
   ];
   return memoryPaths.some((path) => filePath.includes(path));
 }
-async function enforceTDDRequirements(ctx, input) {
+async function enforceTDDRequirements(_ctx, _input) {
 }
-async function validateMemoryOperation(ctx, input) {
+async function validateMemoryOperation(_ctx, _input) {
 }
 async function checkForActiveWorkflow(ctx) {
-  return null;
+  const active = await taskOrchestrator.checkForActiveWorkflows(ctx);
+  if (!active) {
+    return null;
+  }
+  return {
+    id: active.id,
+    type: active.type,
+    status: "in_progress",
+    startedAt: active.createdAt,
+    userRequest: active.userRequest
+  };
 }
-async function resumeWorkflow(workflow, userMessage, ctx) {
+async function resumeWorkflow(workflow, userMessage, _ctx) {
 }
 function extractMemoryNotes(result) {
   if (typeof result === "string") {
@@ -1400,13 +1405,13 @@ function extractMemoryNotes(result) {
 
 // src/index.ts
 var OpenCodeCC10xPlugin = async (input) => {
-  console.log("\u{1F50C} OpenCode cc10x Plugin v6.0.18 initializing...");
+  console.log("\u{1F50C} OpenCode cc10x Plugin v6.0.23 initializing...");
   const { $ } = input;
   const routerHook = await cc10xRouter({ ...input, $ });
   return {
     name: "opencode-cc10x",
     description: "Intelligent orchestration system for OpenCode - port of cc10x from Claude Code",
-    version: "6.0.18",
+    version: "6.0.23",
     hooks: {
       // Router hook that intercepts user requests and orchestrates workflows
       "message.received": routerHook.messageReceived,

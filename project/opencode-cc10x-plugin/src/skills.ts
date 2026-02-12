@@ -1,4 +1,4 @@
-import type { SkillDefinition } from '@opencode-ai/plugin';
+type SkillDefinition = any;
 
 export const skillDefinitions: SkillDefinition[] = [
   {

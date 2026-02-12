@@ -334,7 +334,7 @@ export class MemoryManager {
         await readFile(input, path);
         // File exists, use Edit
         const currentContent = await readFile(input, path);
-        await editFile(input, {
+        await editFile(input, path, {
           oldString: currentContent,
           newString: content
         });

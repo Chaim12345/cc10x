@@ -64,18 +64,17 @@ Windows (PowerShell):
 irm https://raw.githubusercontent.com/Chaim12345/cc10x/main/project/opencode-cc10x-plugin/install-from-github.mjs | node
 ```
 
-3. **Alternative package-manager install (GitHub Packages):**
-
-First, configure auth:
+3. **Alternative package-manager install (public npm):**
 
 ```bash
-npm config set @chaim12345:registry https://npm.pkg.github.com
-npm config set //npm.pkg.github.com/:_authToken <GITHUB_TOKEN>
+npm add opencode-cc10x
+bun add opencode-cc10x
 ```
 
+If commands do not appear in OpenCode, run:
+
 ```bash
-npm add @chaim12345/opencode-cc10x
-bun add @chaim12345/opencode-cc10x
+npx opencode-cc10x init
 ```
 
 If you are testing locally before publishing, install from a tarball:
@@ -96,12 +95,12 @@ The plugin automatically configures the necessary agents. You can customize them
 ```json
 {
   "agent": {
-    "component-builder": {
-      "color": "green",
+    "cc10x-component-builder": {
+      "color": "#00ff00",
       "temperature": 0.3
     },
-    "code-reviewer": {
-      "color": "yellow", 
+    "cc10x-code-reviewer": {
+      "color": "#ffff00", 
       "temperature": 0.1
     }
   }
@@ -128,7 +127,7 @@ All cc10x agents can be configured in `opencode.json`:
 ```json
 {
   "agent": {
-    "component-builder": {
+    "cc10x-component-builder": {
       "description": "Builds features using TDD",
       "model": "anthropic/claude-sonnet-4-20250514",
       "temperature": 0.3,

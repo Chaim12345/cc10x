@@ -1,15 +1,19 @@
 {
   "name": "@chaim12345/opencode-cc10x",
-  "version": "6.0.21",
+  "version": "6.0.23",
   "description": "Intelligent orchestration plugin for OpenCode - port of cc10x from Claude Code",
   "main": "dist/index.js",
+  "bin": {
+    "opencode-cc10x": "bin/opencode-cc10x.mjs"
+  },
   "scripts": {
     "build": "esbuild src/index.ts --bundle --platform=node --format=esm --outfile=dist/index.js --external:@opencode-ai/plugin",
     "dev": "esbuild src/index.ts --bundle --platform=node --format=esm --outfile=dist/index.js --external:@opencode-ai/plugin --watch",
     "test": "bun test --coverage",
     "test:watch": "bun test --watch",
     "lint": "bun x tsc --noEmit",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "npm run build",
+    "postinstall": "node bin/opencode-cc10x.mjs init --postinstall || exit 0"
   },
   "keywords": [
     "opencode",

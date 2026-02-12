@@ -1,8 +1,15 @@
-import type { Plugin } from '@opencode-ai/plugin';
 import { cc10xRouter } from './router';
 
-export const OpenCodeCC10xPlugin: Plugin = async (input) => {
-  console.log('🔌 OpenCode cc10x Plugin v6.0.18 initializing...');
+type RouterInvokeArgs = {
+  request?: string;
+  task?: string;
+  prompt?: string;
+  taskId?: string;
+  forceWorkflow?: boolean;
+};
+
+export const OpenCodeCC10xPlugin = async (input: any) => {
+  console.log('🔌 OpenCode cc10x Plugin v6.0.23 initializing...');
 
   const { $ } = input;
   
@@ -12,7 +19,7 @@ export const OpenCodeCC10xPlugin: Plugin = async (input) => {
   return {
     name: 'opencode-cc10x',
     description: 'Intelligent orchestration system for OpenCode - port of cc10x from Claude Code',
-    version: '6.0.18',
+    version: '6.0.23',
     hooks: {
       // Router hook that intercepts user requests and orchestrates workflows
       'message.received': routerHook.messageReceived,
@@ -33,7 +40,7 @@ export const OpenCodeCC10xPlugin: Plugin = async (input) => {
     tools: {
       'cc10x-router': {
         description: 'Main cc10x orchestration router - automatically invoked for development tasks',
-        execute: async (args, context) => {
+        execute: async (args: RouterInvokeArgs, context: any) => {
           return await routerHook.manualInvoke(args, context);
         }
       }
@@ -43,7 +50,7 @@ export const OpenCodeCC10xPlugin: Plugin = async (input) => {
       {
         name: 'cc10x-orchestrate',
         description: 'Run cc10x intelligent orchestration for a development task',
-        execute: async (args, context) => {
+        execute: async (args: RouterInvokeArgs, context: any) => {
           const request = args.request || args.task || args.prompt || '';
           if (!request.trim()) {
             return 'Please provide a task description. Usage: /cc10x-orchestrate <task description>';
