@@ -2,7 +2,16 @@
 
 **The Intelligent Orchestrator for OpenCode**
 
-A complete port of the cc10x orchestration system from Claude Code to OpenCode, providing intelligent workflow automation, TDD enforcement, and multi-agent coordination.
+A fork/port of the original cc10x orchestration system for OpenCode, providing intelligent workflow automation, TDD enforcement, and multi-agent coordination.
+
+Current release: `6.0.24`
+
+## Project Scope (Fork/Port)
+
+- This package is the **OpenCode port** of cc10x.
+- It is intended for **OpenCode runtime only**.
+- Claude Code references are historical/origin context, not runtime requirements for this package.
+- Upstream origin: `romiluz13/cc10x` concept and workflow model.
 
 ## Features
 
@@ -52,7 +61,15 @@ USER REQUEST
 }
 ```
 
-2. **Install the plugin (single command, no clone):**
+2. **Install the plugin (recommended):**
+
+```bash
+npm add opencode-cc10x@6.0.24
+# or
+bun add opencode-cc10x@6.0.24
+```
+
+3. **Alternative one-command install (no clone):**
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Chaim12345/cc10x/main/project/opencode-cc10x-plugin/install-from-github.mjs | node
@@ -62,13 +79,6 @@ Windows (PowerShell):
 
 ```powershell
 irm https://raw.githubusercontent.com/Chaim12345/cc10x/main/project/opencode-cc10x-plugin/install-from-github.mjs | node
-```
-
-3. **Alternative package-manager install (public npm):**
-
-```bash
-npm add opencode-cc10x
-bun add opencode-cc10x
 ```
 
 If commands do not appear in OpenCode, run:
@@ -229,28 +239,20 @@ opencode --plugin ./dist/
 
 ## Compatibility
 
-- **OpenCode Version**: 0.8.0+
+- **Plugin Version**: `6.0.24`
+- **OpenCode Plugin API**: `@opencode-ai/plugin` `^1.1.60`
+- **OpenCode**: latest stable release recommended
 - **Node.js**: 18+
 - **Bun**: 1.0+
 
-## Migration from Claude Code
+## Origin and Migration Notes
 
-If you're migrating from Claude Code:
+This repository is the OpenCode port/fork of cc10x. If you are migrating from Claude Code:
 
-1. Install this plugin in OpenCode
-2. Copy your existing `.claude/cc10x/` memory files to the project root
-3. The plugin will automatically use your existing memory
-4. All cc10x workflows will work identically
-
-## Differences from Claude Code
-
-| Aspect | Claude Code | OpenCode cc10x |
-|--------|-------------|----------------|
-| Plugin Format | Marketplace plugin | npm package + OpenCode plugin |
-| Agent System | Custom agent framework | OpenCode native agents |
-| Task System | Claude Code Tasks | OpenCode Task tool |
-| Memory | .claude/cc10x/ | Same location, adapted APIs |
-| Skills | Claude skills | OpenCode skills with compatibility layer |
+1. Install this plugin in OpenCode.
+2. Copy existing `.claude/cc10x/` memory files into your project root.
+3. The plugin will reuse those files directly.
+4. Workflows are adapted to OpenCode agents/tasks while preserving cc10x intent.
 
 ## Troubleshooting
 
