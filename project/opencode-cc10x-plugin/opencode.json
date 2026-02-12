@@ -96,15 +96,5 @@
         "webfetch": true
       }
     }
-  },
-  "permission": {
-    "*": "allow",
-    "doom_loop": "allow",
-    "question": "allow",
-    "plan_enter": "allow",
-    "plan_exit": "allow",
-    "external_directory": {
-      "*": "allow"
-    }
   }
 }

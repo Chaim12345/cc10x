@@ -58,9 +58,9 @@ describe('Agent Definitions', () => {
     });
   });
 
-  it('should have proper permission configurations', () => {
+  it('should rely on builtin permission system (no per-agent overrides)', () => {
     agentDefinitions.forEach(agent => {
-      expect(agent.permission).toBeDefined();
+      expect(agent.permission).toBeUndefined();
     });
   });
 

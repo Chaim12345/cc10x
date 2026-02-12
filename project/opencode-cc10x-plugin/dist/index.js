@@ -1405,13 +1405,13 @@ function extractMemoryNotes(result) {
 
 // src/index.ts
 var OpenCodeCC10xPlugin = async (input) => {
-  console.log("\u{1F50C} OpenCode cc10x Plugin v6.0.23 initializing...");
+  console.log("\u{1F50C} OpenCode cc10x Plugin v6.0.24 initializing...");
   const { $ } = input;
   const routerHook = await cc10xRouter({ ...input, $ });
   return {
     name: "opencode-cc10x",
     description: "Intelligent orchestration system for OpenCode - port of cc10x from Claude Code",
-    version: "6.0.23",
+    version: "6.0.24",
     hooks: {
       // Router hook that intercepts user requests and orchestrates workflows
       "message.received": routerHook.messageReceived,

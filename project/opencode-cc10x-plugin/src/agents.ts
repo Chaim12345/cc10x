@@ -60,20 +60,7 @@ Look for "Plan File:" in your prompt's Task Context section:
 ## Router Contract
 Follow the exact YAML contract format with STATUS, CONFIDENCE, TDD_RED_EXIT, TDD_GREEN_EXIT, CRITICAL_ISSUES, BLOCKING, REQUIRES_REMEDIATION, MEMORY_NOTES.
 `,
-    permission: {
-      edit: 'allow',
-      write: 'allow',
-      bash: {
-        '*': 'allow',
-        'git status': 'allow',
-        'git diff': 'allow',
-        'git log': 'allow',
-        'npm test': 'allow',
-        'yarn test': 'allow',
-        'bun test': 'allow',
-        'mkdir -p .claude/cc10x': 'allow'
-      }
-    }
+
   },
   {
     name: 'cc10x-bug-investigator',
@@ -127,18 +114,7 @@ Follow the exact YAML contract format with STATUS, CONFIDENCE, TDD_RED_EXIT, TDD
 
 ## Confidence Scoring
 Only report findings with ≥80% confidence.`,
-    permission: {
-      bash: {
-        '*': 'allow',
-        'git status': 'allow',
-        'git diff': 'allow',
-        'git log': 'allow',
-        'cat': 'allow',
-        'grep': 'allow',
-        'find': 'allow'
-      },
-      webfetch: 'allow'
-    }
+
   },
   {
     name: 'cc10x-code-reviewer',
@@ -200,14 +176,7 @@ Ensure fix solves problem without introducing new issues.
 
 ## For REVIEW workflows
 Comprehensive review of user-specified code with full analysis.`,
-    permission: {
-      bash: {
-        '*': 'allow', // Read-only operations
-        'git diff': 'allow',
-        'git log': 'allow',
-        'grep': 'allow'
-      }
-    }
+
   },
   {
     name: 'cc10x-silent-failure-hunter',
@@ -284,13 +253,7 @@ Include patterns discovered for future prevention.
 
 ## Zero Tolerance Policy
 Any empty catch block = CRITICAL issue. No exceptions.`,
-    permission: {
-      bash: {
-        '*': 'allow',
-        'grep': 'allow',
-        'find': 'allow'
-      }
-    }
+
   },
   {
     name: 'cc10x-integration-verifier',
@@ -368,17 +331,7 @@ Include verification results and any deployment considerations.
 
 ## Exit Code Rule
 If you cannot verify with exit code 0, the verdict is FAIL.`,
-    permission: {
-      bash: {
-        '*': 'allow',
-        'npm test': 'allow',
-        'yarn test': 'allow', 
-        'bun test': 'allow',
-        'npm start': 'allow',
-        'npm run build': 'allow',
-        'git status': 'allow'
-      }
-    }
+
   },
   {
     name: 'cc10x-planner',
@@ -471,14 +424,6 @@ Present options with pros/cons when multiple approaches exist.
 ## For cc10x Integration
 Create plan that can be followed by component-builder in subsequent BUILD workflow.
 Include specific file paths, test commands, and code structure expectations.`,
-    permission: {
-      write: 'allow',
-      edit: 'allow',
-      bash: {
-        '*': 'allow',
-        'mkdir -p docs/plans': 'allow'
-      },
-      webfetch: 'allow'
-    }
+
   }
 ];
