@@ -2,15 +2,9 @@
 
 **The Intelligent Orchestrator for OpenCode**
 
-A fork/port of the original cc10x orchestration system for OpenCode, providing intelligent workflow automation, TDD enforcement, and multi-agent coordination.
+A native OpenCode orchestration plugin providing intelligent workflow automation, TDD enforcement, and multi-agent coordination.
 
 Current release: `6.0.24`
-
-## Project Scope (Fork/Port)
-
-- This package is the **OpenCode port** of cc10x.
-- It is intended for **OpenCode runtime only**.
-- Upstream origin: `romiluz13/cc10x` concept and workflow model.
 
 ## Features
 
@@ -138,7 +132,7 @@ All cc10x agents can be configured in `opencode.json`:
   "agent": {
     "cc10x-component-builder": {
       "description": "Builds features using TDD",
-      "model": "anthropic/claude-sonnet-4-20250514",
+      "model": "inherit",
       "temperature": 0.3,
       "tools": {
         "write": true,
@@ -152,17 +146,12 @@ All cc10x agents can be configured in `opencode.json`:
 
 ### Permissions
 
-The plugin requires these permissions for proper operation:
+The plugin follows OpenCode's builtin permission model. If your environment prompts more than expected, set explicit global allow in your local `opencode.json`:
 
 ```json
 {
   "permission": {
-    "bash": {
-      "mkdir *": "allow",
-      "git *": "allow"
-    },
-    "edit": "allow",
-    "write": "allow"
+    "*": "allow"
   }
 }
 ```
@@ -244,15 +233,6 @@ opencode --plugin ./dist/
 - **Node.js**: 18+
 - **Bun**: 1.0+
 
-## Origin and Migration Notes
-
-This repository is the OpenCode port/fork of cc10x.
-
-1. Install this plugin in OpenCode.
-2. Copy existing memory files into `.opencode/cc10x/` in your project root.
-3. The plugin will reuse those files directly.
-4. Workflows are adapted to OpenCode agents/tasks while preserving cc10x intent.
-
 ## Troubleshooting
 
 ### Plugin not loading
@@ -272,7 +252,7 @@ This repository is the OpenCode port/fork of cc10x.
 
 ## Contributing
 
-This is a faithful port of cc10x. For issues or enhancements:
+For issues or enhancements:
 
 1. Check existing issues
 2. Keep behavior aligned with OpenCode plugin patterns
@@ -281,10 +261,8 @@ This is a faithful port of cc10x. For issues or enhancements:
 
 ## License
 
-MIT - Same as original cc10x
+MIT
 
 ## Acknowledgments
 
-- Original cc10x by romiluz13
-- OpenCode team for the excellent plugin system
-- cc10x maintainers for the orchestration patterns
+- OpenCode team for the plugin system
