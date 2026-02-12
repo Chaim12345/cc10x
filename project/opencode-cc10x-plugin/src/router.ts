@@ -230,9 +230,16 @@ async function checkForActiveWorkflow(ctx: any): Promise<WorkflowState | null> {
   };
 }
 
-async function resumeWorkflow(_workflow: WorkflowState, _userMessage: string, _ctx: any): Promise<boolean> {
-  // Resume path is not implemented yet; return false so message processing continues.
-  return false;
+async function resumeWorkflow(workflow: WorkflowState, userMessage: string, _ctx: any): Promise<boolean> {
+  const lower = userMessage.toLowerCase();
+  const requestsNewWorkflow = lower.includes('new workflow') || lower.includes('start new') || lower.includes('new task');
+  if (requestsNewWorkflow) {
+    return false;
+  }
+
+  // Resume path is intentionally conservative for now: do not create duplicate active workflows.
+  console.log(`⏸️ Active workflow ${workflow.id} in progress; skipping duplicate workflow creation.`);
+  return true;
 }
 
 function extractMemoryNotes(result: any): string[] {

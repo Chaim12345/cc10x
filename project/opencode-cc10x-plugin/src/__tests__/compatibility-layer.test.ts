@@ -5,6 +5,7 @@ import {
   isTestFile,
   extractExitCode 
 } from '../compatibility-layer';
+import { getPreferredMemoryDir, isMemoryPath } from '../memory-paths';
 
 describe('Compatibility Layer', () => {
   describe('isPermissionFreeOperation', () => {
@@ -34,6 +35,27 @@ describe('Compatibility Layer', () => {
     it('should return false for non-memory operations', () => {
       expect(isPermissionFreeOperation('read', { filePath: 'src/index.ts' })).toBe(false);
       expect(isPermissionFreeOperation('bash', { command: 'rm', args: ['-rf', 'node_modules'] })).toBe(false);
+    });
+
+    it('should reject traversal and spoofed absolute paths', () => {
+      expect(isMemoryPath('.opencode/cc10x/../../secrets.md')).toBe(false);
+      expect(isPermissionFreeOperation('read', { filePath: '/tmp/x.opencode/cc10x/activeContext.md' })).toBe(false);
+      expect(isPermissionFreeOperation('write', { filePath: '/tmp/x.opencode/cc10x/new.md' })).toBe(false);
+      expect(isPermissionFreeOperation('bash', { command: 'mkdir', args: ['-p', '/tmp/.opencode/cc10x'] })).toBe(false);
+    });
+
+    it('should sanitize unsafe CC10X_MEMORY_DIR values', () => {
+      const original = process.env.CC10X_MEMORY_DIR;
+      try {
+        process.env.CC10X_MEMORY_DIR = '../outside';
+        expect(getPreferredMemoryDir()).toBe('.opencode/cc10x');
+
+        process.env.CC10X_MEMORY_DIR = '/tmp/absolute';
+        expect(getPreferredMemoryDir()).toBe('.opencode/cc10x');
+      } finally {
+        if (original === undefined) delete process.env.CC10X_MEMORY_DIR;
+        else process.env.CC10X_MEMORY_DIR = original;
+      }
     });
   });
 

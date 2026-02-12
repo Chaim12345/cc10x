@@ -81,6 +81,25 @@ var INTENT_KEYWORDS = {
     "scaffold"
   ]
 };
+var STRONG_DIRECT_KEYWORDS = /* @__PURE__ */ new Set([
+  "fix",
+  "bug",
+  "error",
+  "debug",
+  "broken",
+  "fail",
+  "crash",
+  "build",
+  "implement",
+  "create",
+  "develop",
+  "review",
+  "audit",
+  "analyze",
+  "plan",
+  "design",
+  "architect"
+]);
 function detectIntent(message, memory) {
   const lowerMessage = message.toLowerCase();
   const detectedKeywords = [];
@@ -116,8 +135,9 @@ function detectIntent(message, memory) {
   const totalPossibleKeywords = INTENT_KEYWORDS[selectedIntent].length;
   const confidence = Math.min(100, Math.round(intentScores[selectedIntent] / Math.max(1, totalPossibleKeywords) * 100));
   const memoryContext = analyzeMemoryContext(memory, selectedIntent);
+  const hasStrongDirectSignal = intentScores[selectedIntent] >= 2 || detectedKeywords.some((keyword) => STRONG_DIRECT_KEYWORDS.has(keyword));
   if (memoryContext.suggestedIntent && memoryContext.suggestedIntent !== selectedIntent) {
-    if (memoryContext.confidence > confidence) {
+    if (!hasStrongDirectSignal && memoryContext.confidence > confidence) {
       selectedIntent = memoryContext.suggestedIntent;
     }
   }
@@ -158,6 +178,56 @@ function generateReasoning(intent, keywords, memoryContext) {
   }
   reasoningParts.push(`Selected ${intent} workflow based on priority rules`);
   return reasoningParts.join(". ");
+}
+
+// src/memory-paths.ts
+import { existsSync } from "node:fs";
+var OPENCODE_MEMORY_DIR = ".opencode/cc10x";
+var LEGACY_MEMORY_DIR = ".claude/cc10x";
+function sanitizeMemoryDir(value) {
+  const normalized = normalizePath(value);
+  if (!normalized || isAbsoluteLike(normalized) || hasTraversal(normalized)) {
+    return OPENCODE_MEMORY_DIR;
+  }
+  return normalized;
+}
+function normalizePath(value) {
+  return value.replace(/\\/g, "/").replace(/\/+/g, "/").replace(/^\.\//, "").replace(/\/+$/, "").trim();
+}
+function isAbsoluteLike(value) {
+  return value.startsWith("/") || /^[A-Za-z]:\//.test(value);
+}
+function hasTraversal(value) {
+  return value.split("/").some((segment) => segment === "..");
+}
+function getPreferredMemoryDir() {
+  const explicit = process.env.CC10X_MEMORY_DIR;
+  if (explicit && explicit.trim().length > 0) {
+    return sanitizeMemoryDir(explicit.trim());
+  }
+  if (existsSync(OPENCODE_MEMORY_DIR)) return OPENCODE_MEMORY_DIR;
+  if (existsSync(LEGACY_MEMORY_DIR)) return LEGACY_MEMORY_DIR;
+  return OPENCODE_MEMORY_DIR;
+}
+function getKnownMemoryDirs() {
+  const preferred = getPreferredMemoryDir();
+  const dirs = [preferred, OPENCODE_MEMORY_DIR, LEGACY_MEMORY_DIR];
+  return Array.from(new Set(dirs));
+}
+function buildMemoryFiles(memoryDir) {
+  return {
+    activeContext: `${memoryDir}/activeContext.md`,
+    patterns: `${memoryDir}/patterns.md`,
+    progress: `${memoryDir}/progress.md`
+  };
+}
+function isMemoryPath(filePath) {
+  const normalized = normalizePath(filePath);
+  if (!normalized || isAbsoluteLike(normalized) || hasTraversal(normalized)) return false;
+  return getKnownMemoryDirs().some((dir) => {
+    const prefix = `${dir}/`;
+    return normalized === dir || normalized.startsWith(prefix);
+  });
 }
 
 // src/compatibility-layer.ts
@@ -201,12 +271,6 @@ async function editFile(input, path, options) {
 }
 
 // src/memory.ts
-var MEMORY_DIR = ".opencode/cc10x";
-var MEMORY_FILES = {
-  activeContext: `${MEMORY_DIR}/activeContext.md`,
-  patterns: `${MEMORY_DIR}/patterns.md`,
-  progress: `${MEMORY_DIR}/progress.md`
-};
 var DEFAULT_ACTIVE_CONTEXT = `# Active Context
 
 <!-- CC10X: Do not rename headings. Used as Edit anchors. -->
@@ -276,8 +340,13 @@ var MemoryManager = class {
   ctx = null;
   memoryCache = null;
   pendingNotes = [];
+  memoryDir = getPreferredMemoryDir();
+  get memoryFiles() {
+    return buildMemoryFiles(this.memoryDir);
+  }
   async initialize(input) {
     this.ctx = input;
+    this.memoryDir = getPreferredMemoryDir();
     await this.ensureDirectory(input);
   }
   async ensureDirectory(input) {
@@ -286,7 +355,7 @@ var MemoryManager = class {
       if (typeof $ !== "function") {
         throw new Error("Shell not available");
       }
-      const result = await $`mkdir -p ${MEMORY_DIR}`;
+      const result = await $`mkdir -p ${this.memoryDir}`;
       if (result.exitCode !== 0) {
         throw new Error(`mkdir failed: ${result.stderr.toString()}`);
       }
@@ -305,12 +374,29 @@ var MemoryManager = class {
       lastUpdated: (/* @__PURE__ */ new Date()).toISOString()
     };
     try {
-      for (const [key, path] of Object.entries(MEMORY_FILES)) {
+      const preferredFiles = this.memoryFiles;
+      const fallbackFiles = getKnownMemoryDirs().map((dir) => buildMemoryFiles(dir));
+      for (const [key, preferredPath] of Object.entries(preferredFiles)) {
         try {
-          const content = await readFile(input, path);
+          const content = await readFile(input, preferredPath);
           memory[key] = content;
-        } catch (error) {
-          console.log(`Memory file ${path} not found, will create template`);
+          continue;
+        } catch {
+        }
+        let loaded = false;
+        for (const files of fallbackFiles) {
+          const candidate = files[key];
+          if (candidate === preferredPath) continue;
+          try {
+            const content = await readFile(input, candidate);
+            memory[key] = content;
+            loaded = true;
+            break;
+          } catch {
+          }
+        }
+        if (!loaded) {
+          console.log(`Memory file ${preferredPath} not found, will create template`);
         }
       }
     } catch (error) {
@@ -372,13 +458,8 @@ var MemoryManager = class {
     if (updates.nextSteps && updates.nextSteps.length > 0) {
       content = this.appendToSection(content, "## Next Steps", updates.nextSteps);
     }
-    content = content.replace(
-      /## Last Updated\s*\n/,
-      `## Last Updated
-${(/* @__PURE__ */ new Date()).toISOString()}
-`
-    );
-    await this.writeMemoryFile(input, MEMORY_FILES.activeContext, content);
+    content = this.replaceLastUpdated(content);
+    await this.writeMemoryFile(input, this.memoryFiles.activeContext, content);
   }
   async updateProgress(input, updates) {
     const memory = await this.load(input);
@@ -395,13 +476,8 @@ ${(/* @__PURE__ */ new Date()).toISOString()}
     if (updates.verification && updates.verification.length > 0) {
       content = this.appendToSection(content, "## Verification", updates.verification);
     }
-    content = content.replace(
-      /## Last Updated\s*\n/,
-      `## Last Updated
-${(/* @__PURE__ */ new Date()).toISOString()}
-`
-    );
-    await this.writeMemoryFile(input, MEMORY_FILES.progress, content);
+    content = this.replaceLastUpdated(content);
+    await this.writeMemoryFile(input, this.memoryFiles.progress, content);
   }
   async updatePatterns(input, updates) {
     const memory = await this.load(input);
@@ -415,13 +491,8 @@ ${(/* @__PURE__ */ new Date()).toISOString()}
     if (updates.architectureDecisions && updates.architectureDecisions.length > 0) {
       content = this.appendToSection(content, "## Architecture Decisions", updates.architectureDecisions);
     }
-    content = content.replace(
-      /## Last Updated\s*\n/,
-      `## Last Updated
-${(/* @__PURE__ */ new Date()).toISOString()}
-`
-    );
-    await this.writeMemoryFile(input, MEMORY_FILES.patterns, content);
+    content = this.replaceLastUpdated(content);
+    await this.writeMemoryFile(input, this.memoryFiles.patterns, content);
   }
   async accumulateNotes(_ctx, notes) {
     this.pendingNotes.push(...notes);
@@ -504,7 +575,45 @@ ${items}
     return content;
   }
   replaceOrAppendToSection(content, sectionHeader, newItems) {
-    return this.appendToSection(content, sectionHeader, newItems);
+    const lines = content.split("\n");
+    const sectionLineIndex = lines.findIndex((line) => line.includes(sectionHeader));
+    const replacementItems = newItems.map((item) => `- [${(/* @__PURE__ */ new Date()).toISOString().split("T")[0]}] ${item}`);
+    if (sectionLineIndex === -1) {
+      const lastUpdatedIndex = content.lastIndexOf("## Last Updated");
+      if (lastUpdatedIndex !== -1) {
+        return content.slice(0, lastUpdatedIndex) + `${sectionHeader}
+${replacementItems.join("\n")}
+
+` + content.slice(lastUpdatedIndex);
+      }
+      return `${content}
+${sectionHeader}
+${replacementItems.join("\n")}
+`;
+    }
+    let nextSectionIndex = sectionLineIndex + 1;
+    while (nextSectionIndex < lines.length && !lines[nextSectionIndex].startsWith("##")) {
+      nextSectionIndex++;
+    }
+    lines.splice(sectionLineIndex + 1, nextSectionIndex - (sectionLineIndex + 1), ...replacementItems);
+    return lines.join("\n");
+  }
+  replaceLastUpdated(content) {
+    const nextStamp = `${(/* @__PURE__ */ new Date()).toISOString()}`;
+    const withBlockReplace = content.replace(
+      /## Last Updated\s*\n(?:[^\n]*\n)?/,
+      `## Last Updated
+${nextStamp}
+`
+    );
+    if (withBlockReplace === content) {
+      return `${content.trimEnd()}
+
+## Last Updated
+${nextStamp}
+`;
+    }
+    return withBlockReplace;
   }
   clearCache() {
     this.memoryCache = null;
@@ -537,7 +646,7 @@ var TaskOrchestrator = class _TaskOrchestrator {
       description: this.buildWorkflowDescription(workflow),
       activeForm: `Starting ${options.intent} workflow`
     });
-    workflow.tasks[0].id = parentTask.id;
+    workflow.openCodeTaskId = parentTask.id;
     console.log(`\u{1F4CB} Created workflow ${workflowId} with ${tasks.length} tasks`);
     return workflow.tasks[0];
   }
@@ -549,6 +658,7 @@ var TaskOrchestrator = class _TaskOrchestrator {
         tasks.push(
           {
             id: `${workflowId}-builder`,
+            workflowId,
             subject: "CC10X component-builder: Implement feature",
             description: `Build feature with TDD: ${userRequest}
 
@@ -559,6 +669,7 @@ Plan: ${this.extractPlanFile(memory) || "N/A"}`,
           },
           {
             id: `${workflowId}-reviewer`,
+            workflowId,
             subject: "CC10X code-reviewer: Review implementation",
             description: "Review code quality, patterns, security",
             status: "pending",
@@ -568,6 +679,7 @@ Plan: ${this.extractPlanFile(memory) || "N/A"}`,
           },
           {
             id: `${workflowId}-hunter`,
+            workflowId,
             subject: "CC10X silent-failure-hunter: Hunt edge cases",
             description: "Find silent failures and edge cases",
             status: "pending",
@@ -577,6 +689,7 @@ Plan: ${this.extractPlanFile(memory) || "N/A"}`,
           },
           {
             id: `${workflowId}-verifier`,
+            workflowId,
             subject: "CC10X integration-verifier: Verify implementation",
             description: "End-to-end validation of the implementation",
             status: "pending",
@@ -590,6 +703,7 @@ Plan: ${this.extractPlanFile(memory) || "N/A"}`,
         tasks.push(
           {
             id: `${workflowId}-investigator`,
+            workflowId,
             subject: "CC10X bug-investigator: Investigate issue",
             description: `Debug issue with log-first approach: ${userRequest}`,
             status: "pending",
@@ -598,6 +712,7 @@ Plan: ${this.extractPlanFile(memory) || "N/A"}`,
           },
           {
             id: `${workflowId}-reviewer`,
+            workflowId,
             subject: "CC10X code-reviewer: Validate fix",
             description: "Review fix for correctness and quality",
             status: "pending",
@@ -607,6 +722,7 @@ Plan: ${this.extractPlanFile(memory) || "N/A"}`,
           },
           {
             id: `${workflowId}-verifier`,
+            workflowId,
             subject: "CC10X integration-verifier: Verify fix",
             description: "Verify the fix resolves the issue",
             status: "pending",
@@ -620,6 +736,7 @@ Plan: ${this.extractPlanFile(memory) || "N/A"}`,
         tasks.push(
           {
             id: `${workflowId}-reviewer`,
+            workflowId,
             subject: "CC10X code-reviewer: Comprehensive review",
             description: `Review code with 80%+ confidence: ${userRequest}`,
             status: "pending",
@@ -632,6 +749,7 @@ Plan: ${this.extractPlanFile(memory) || "N/A"}`,
         tasks.push(
           {
             id: `${workflowId}-planner`,
+            workflowId,
             subject: "CC10X planner: Create comprehensive plan",
             description: `Create detailed plan: ${userRequest}`,
             status: "pending",
@@ -643,6 +761,7 @@ Plan: ${this.extractPlanFile(memory) || "N/A"}`,
     }
     tasks.push({
       id: `${workflowId}-memory-update`,
+      workflowId,
       subject: "CC10X Memory Update",
       description: "Persist workflow learnings to memory bank",
       status: "pending",
@@ -1205,8 +1324,8 @@ async function cc10xRouter(input) {
         }
         const activeWorkflow = await checkForActiveWorkflow(input2);
         if (activeWorkflow) {
-          await resumeWorkflow(activeWorkflow, userMessage, input2);
-          return;
+          const handled = await resumeWorkflow(activeWorkflow, userMessage, input2);
+          if (handled) return;
         }
         const memory = await memoryManager.load(input2);
         const intentResult = detectIntent(userMessage, memory);
@@ -1220,7 +1339,7 @@ async function cc10xRouter(input) {
           intent,
           userRequest: userMessage,
           memory,
-          workflowTaskId: workflowTask.id,
+          workflowTaskId: workflowTask.workflowId || workflowTask.id,
           activeForm: getActiveFormForIntent(intent, userMessage)
         });
       } catch (error) {
@@ -1353,12 +1472,7 @@ function isTestCommand(command) {
 }
 function isMemoryOperation(input) {
   const filePath = input.args?.filePath || "";
-  const memoryPaths = [
-    ".opencode/cc10x/activeContext.md",
-    ".opencode/cc10x/patterns.md",
-    ".opencode/cc10x/progress.md"
-  ];
-  return memoryPaths.some((path) => filePath.includes(path));
+  return isMemoryPath(filePath);
 }
 async function enforceTDDRequirements(_ctx, _input) {
 }
@@ -1378,6 +1492,13 @@ async function checkForActiveWorkflow(ctx) {
   };
 }
 async function resumeWorkflow(workflow, userMessage, _ctx) {
+  const lower = userMessage.toLowerCase();
+  const requestsNewWorkflow = lower.includes("new workflow") || lower.includes("start new") || lower.includes("new task");
+  if (requestsNewWorkflow) {
+    return false;
+  }
+  console.log(`\u23F8\uFE0F Active workflow ${workflow.id} in progress; skipping duplicate workflow creation.`);
+  return true;
 }
 function extractMemoryNotes(result) {
   if (typeof result === "string") {

@@ -33,6 +33,13 @@ const INTENT_KEYWORDS: Record<WorkflowType, string[]> = {
   ]
 };
 
+const STRONG_DIRECT_KEYWORDS = new Set([
+  'fix', 'bug', 'error', 'debug', 'broken', 'fail', 'crash',
+  'build', 'implement', 'create', 'develop',
+  'review', 'audit', 'analyze',
+  'plan', 'design', 'architect'
+]);
+
 export function detectIntent(message: string, memory?: any): DetectionResult {
   const lowerMessage = message.toLowerCase();
   const detectedKeywords: string[] = [];
@@ -80,9 +87,13 @@ export function detectIntent(message: string, memory?: any): DetectionResult {
 
   // Check memory for context clues
   const memoryContext = analyzeMemoryContext(memory, selectedIntent);
+  const hasStrongDirectSignal =
+    intentScores[selectedIntent] >= 2 ||
+    detectedKeywords.some((keyword) => STRONG_DIRECT_KEYWORDS.has(keyword));
+
   if (memoryContext.suggestedIntent && memoryContext.suggestedIntent !== selectedIntent) {
-    // If memory strongly suggests different intent, adjust
-    if (memoryContext.confidence > confidence) {
+    // Only allow memory override when direct intent signal is weak.
+    if (!hasStrongDirectSignal && memoryContext.confidence > confidence) {
       selectedIntent = memoryContext.suggestedIntent;
     }
   }

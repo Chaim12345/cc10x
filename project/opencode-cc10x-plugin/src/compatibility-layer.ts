@@ -1,4 +1,4 @@
-import { getKnownMemoryDirs, isMemoryPath } from './memory-paths';
+import { isMemoryDirectory, isMemoryPath } from './memory-paths';
 
 // Compatibility layer for cc10x helper I/O on OpenCode
 // These wrap OpenCode's native tools with cc10x-expected interfaces
@@ -114,9 +114,6 @@ export async function bash(input: any, command: string, args: string[] = []): Pr
 
 // Permission checking utilities
 export function isPermissionFreeOperation(tool: string, args: any): boolean {
-  // Memory operations are permission-free in cc10x
-  const memoryDirs = getKnownMemoryDirs();
-  
   if (tool === 'read' && args?.filePath) {
     return isMemoryPath(args.filePath);
   }
@@ -126,9 +123,7 @@ export function isPermissionFreeOperation(tool: string, args: any): boolean {
   }
   
   if (tool === 'write' && args?.filePath) {
-    // Write is permission-free for any file in a memory directory (for new files).
-    const filePath = String(args.filePath).replace(/\\/g, '/');
-    return memoryDirs.some((dir) => filePath.includes(`${dir}/`) || filePath === dir);
+    return isMemoryPath(args.filePath);
   }
   
   if (tool === 'bash' && args?.command) {
@@ -136,8 +131,7 @@ export function isPermissionFreeOperation(tool: string, args: any): boolean {
     // mkdir for memory directory is permission-free
     if (command === 'mkdir' && args.args?.includes('-p') && 
         args.args?.some((arg: string) => {
-          const normalizedArg = String(arg).replace(/\\/g, '/');
-          return memoryDirs.some((dir) => normalizedArg.includes(dir));
+          return isMemoryDirectory(String(arg));
         })) {
       return true;
     }

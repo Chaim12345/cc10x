@@ -62,6 +62,19 @@ describe('Intent Detection', () => {
       expect(result.intent).toBe('DEBUG');
     });
 
+    it('should not override explicit request keywords with stale memory context', () => {
+      const memory = {
+        activeContext: '## Current Focus\nPlanning architecture migration',
+        patterns: '',
+        progress: ''
+      };
+
+      const result = detectIntent('fix the login bug', memory);
+
+      expect(result.intent).toBe('DEBUG');
+      expect(result.keywords).toContain('fix');
+    });
+
     it('should handle empty or null memory gracefully', () => {
       const result = detectIntent('build something', null);
       expect(result.intent).toBe('BUILD');
