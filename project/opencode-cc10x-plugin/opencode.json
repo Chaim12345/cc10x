@@ -6,7 +6,7 @@
       "description": "Builds features using TDD cycle (RED → GREEN → REFACTOR). Part of cc10x orchestration system.",
       "mode": "subagent",
       "temperature": 0.3,
-      "color": "green",
+      "color": "#00ff00",
       "tools": {
         "write": true,
         "edit": true,
@@ -22,7 +22,7 @@
       "description": "Investigates bugs with log-first approach. Part of cc10x orchestration system.",
       "mode": "subagent", 
       "temperature": 0.2,
-      "color": "orange",
+      "color": "#ffa500",
       "tools": {
         "write": false,
         "edit": false,
@@ -38,7 +38,7 @@
       "description": "Reviews code with 80%+ confidence threshold. Part of cc10x orchestration system.",
       "mode": "subagent",
       "temperature": 0.1,
-      "color": "yellow",
+      "color": "#ffff00",
       "tools": {
         "write": false,
         "edit": false,
@@ -53,7 +53,7 @@
       "description": "Finds silent failures and error handling gaps. Part of cc10x orchestration system.",
       "mode": "subagent",
       "temperature": 0.2,
-      "color": "red",
+      "color": "#ff0000",
       "tools": {
         "write": false,
         "edit": false,
@@ -68,7 +68,7 @@
       "description": "Performs end-to-end validation. Part of cc10x orchestration system.",
       "mode": "subagent",
       "temperature": 0.1,
-      "color": "blue",
+      "color": "#0000ff",
       "tools": {
         "write": false,
         "edit": false,
@@ -84,7 +84,7 @@
       "description": "Creates comprehensive plans with research. Part of cc10x orchestration system.",
       "mode": "subagent",
       "temperature": 0.4,
-      "color": "purple",
+      "color": "#800080",
       "tools": {
         "write": true,
         "edit": true,

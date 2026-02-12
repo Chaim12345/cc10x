@@ -1,6 +1,6 @@
 {
   "name": "@chaim12345/opencode-cc10x",
-  "version": "6.0.18",
+  "version": "6.0.21",
   "description": "Intelligent orchestration plugin for OpenCode - port of cc10x from Claude Code",
   "main": "dist/index.js",
   "scripts": {
@@ -27,13 +27,12 @@
     "url": "https://github.com/Chaim12345/cc10x.git"
   },
   "publishConfig": {
-    "registry": "https://npm.pkg.github.com"
+    "registry": "https://registry.npmjs.org"
   },
-  "dependencies": {},
   "devDependencies": {
+    "@types/node": "^20.0.0",
     "esbuild": "^0.25.10",
-    "typescript": "^5.0.0",
-    "@types/node": "^20.0.0"
+    "typescript": "^5.0.0"
   },
   "peerDependencies": {
     "@opencode-ai/plugin": "^1.1.60"
