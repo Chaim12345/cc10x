@@ -3,7 +3,7 @@ type SkillDefinition = any;
 export const skillDefinitions: SkillDefinition[] = [
   {
     name: 'cc10x-session-memory',
-    description: 'MANDATORY: Load and update .claude/cc10x/ memory files. All cc10x agents use this for persistence.',
+    description: 'MANDATORY: Load and update .opencode/cc10x/ memory files. All cc10x agents use this for persistence.',
     license: 'MIT',
     compatibility: 'opencode',
     metadata: {
@@ -21,18 +21,18 @@ EVERY WORKFLOW MUST:
 **Brevity Rule:** Memory is an index, not a document. Be brief—one line per item.
 
 ## Memory Surfaces (Types)
-1. **Index / Working Memory**: .claude/cc10x/activeContext.md
+1. **Index / Working Memory**: .opencode/cc10x/activeContext.md
    - "What matters right now": focus, next steps, active decisions, learnings
    - Links to durable artifacts (plans/research)
-2. **Long-Term Project Memory**: .claude/cc10x/patterns.md
+2. **Long-Term Project Memory**: .opencode/cc10x/patterns.md
    - Conventions, architecture decisions, common gotchas, reusable solutions
-3. **Progress + Evidence Memory**: .claude/cc10x/progress.md
+3. **Progress + Evidence Memory**: .opencode/cc10x/progress.md
    - What's done/remaining + verification evidence (commands + exit codes)
 4. **Artifact Memory (Durable)**: docs/plans/*, docs/research/*
 5. **Tasks (Execution State)**: OpenCode Tasks
 
 ## Permission-Free Operations
-- Create memory directory: Bash(command="mkdir -p .claude/cc10x")
+- Create memory directory: Bash(command="mkdir -p .opencode/cc10x")
 - **Read memory files**: Read tool (FREE)
 - **Create NEW memory file**: Write tool (FREE if file doesn't exist)
 - **Update EXISTING memory**: Edit tool (FREE - no permission prompt)
@@ -40,10 +40,10 @@ EVERY WORKFLOW MUST:
 **CRITICAL: Use Write for NEW files, Edit for UPDATES.**
 
 ## At Workflow START (REQUIRED)
-1. Bash(command="mkdir -p .claude/cc10x")
-2. Read(file_path=".claude/cc10x/activeContext.md")
-3. Read(file_path=".claude/cc10x/patterns.md")
-4. Read(file_path=".claude/cc10x/progress.md")
+1. Bash(command="mkdir -p .opencode/cc10x")
+2. Read(file_path=".opencode/cc10x/activeContext.md")
+3. Read(file_path=".opencode/cc10x/patterns.md")
+4. Read(file_path=".opencode/cc10x/progress.md")
 
 ## At Workflow END (REQUIRED)
 Use Edit tool (NO permission prompt) to update:
@@ -1984,13 +1984,13 @@ When frontend patterns are established or discovered:
 
 ### Memory Location
 Keep same location for compatibility:
-- \`.claude/cc10x/activeContext.md\`
-- \`.claude/cc10x/patterns.md\`
-- \`.claude/cc10x/progress.md\`
+- \`.opencode/cc10x/activeContext.md\`
+- \`.opencode/cc10x/patterns.md\`
+- \`.opencode/cc10x/progress.md\`
 
 ### Permission-Free Operations
 Ensure these operations don't ask permission:
-- Creating memory directory: \`mkdir -p .claude/cc10x\`
+- Creating memory directory: \`mkdir -p .opencode/cc10x\`
 - Reading memory files: \`Read(file_path="...")\`
 - Writing new memory files: \`Write(file_path="...", content="...")\`
 - Editing existing memory: \`Edit(file_path="...", old_string="...", new_string="...")\`
@@ -2022,22 +2022,22 @@ Use OpenCode plugin hooks:
 - Separate commands (no && chaining) for permission-free
 - Capture exit codes for verification
 
-## Migration from Claude Code
+## Migration from legacy cc10x runtime
 
 ### Existing Memory Files
-- Copy .claude/cc10x/ directory to project
+- Copy .opencode/cc10x/ directory to project
 - Files are compatible as-is
 - Plugin will auto-heal missing sections
 - No conversion needed
 
 ### Agent Differences
-- Claude Code agents vs OpenCode agents
+- Legacy agents vs OpenCode agents
 - Different tool interfaces
 - Different permission models
 - Similar but not identical execution
 
 ### Skill Loading
-- Claude skills vs OpenCode skills
+- Legacy skills vs OpenCode skills
 - Different discovery mechanisms
 - Plugin provides compatibility layer
 - Skills loaded via plugin registration
@@ -2049,7 +2049,7 @@ Use OpenCode plugin hooks:
 {
   "permission": {
     "bash": {
-      "mkdir -p .claude/cc10x": "allow",
+      "mkdir -p .opencode/cc10x": "allow",
       "git status": "allow",
       "git diff": "allow"
     },
@@ -2083,15 +2083,15 @@ Use OpenCode plugin hooks:
 }
 \`\`\`
 
-## Differences from Claude Code
+## Runtime Differences
 
-| Aspect | Claude Code | OpenCode |
-|--------|-------------|----------|
+| Aspect | Legacy cc10x runtime | OpenCode |
+|--------|-----------------------|----------|
 | Plugin format | Marketplace plugin | npm package |
 | Agent invocation | Custom system | Task tool |
 | Memory operations | Permission-free by default | Need permission config |
-| Task system | Claude Code Tasks | OpenCode Task tool |
-| Skills | Claude skills | OpenCode skills |
+| Task system | Legacy task runner | OpenCode Task tool |
+| Skills | Legacy skill loader | OpenCode skills |
 | Hooks | Not applicable | Plugin hooks available |
 
 ## Troubleshooting

@@ -25,7 +25,7 @@ export const agentDefinitions: AgentDefinition[] = [
 
 ## Memory First
 Always load memory at start:
-1. Create directory: Bash(command="mkdir -p .claude/cc10x")
+1. Create directory: Bash(command="mkdir -p .opencode/cc10x")
 2. Read memory files: activeContext.md, patterns.md, progress.md
 
 ## SKILL_HINTS
@@ -42,7 +42,7 @@ Look for "Plan File:" in your prompt's Task Context section:
 3. **GREEN** - Minimal code to pass (must exit 0)
 4. **REFACTOR** - Clean up, keep tests green
 5. **Verify** - All tests pass, functionality works
-6. **Update memory** - Use Edit tool (permission-free) to update .claude/cc10x/*.md
+6. **Update memory** - Use Edit tool (permission-free) to update .opencode/cc10x/*.md
 
 ## Pre-Implementation Checklist
 - API: CORS? Auth middleware? Input validation? Rate limiting?

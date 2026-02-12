@@ -1,7 +1,7 @@
 {
   "name": "@chaim12345/opencode-cc10x",
   "version": "6.0.24",
-  "description": "Intelligent orchestration plugin for OpenCode - port of cc10x from Claude Code",
+  "description": "Intelligent orchestration plugin for OpenCode",
   "main": "dist/index.js",
   "bin": {
     "opencode-cc10x": "bin/opencode-cc10x.mjs"

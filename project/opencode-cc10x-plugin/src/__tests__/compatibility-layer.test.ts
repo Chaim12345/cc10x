@@ -9,24 +9,24 @@ import {
 describe('Compatibility Layer', () => {
   describe('isPermissionFreeOperation', () => {
     it('should identify memory file reads as permission-free', () => {
-      expect(isPermissionFreeOperation('read', { filePath: '.claude/cc10x/activeContext.md' })).toBe(true);
-      expect(isPermissionFreeOperation('read', { filePath: '.claude/cc10x/patterns.md' })).toBe(true);
-      expect(isPermissionFreeOperation('read', { filePath: '.claude/cc10x/progress.md' })).toBe(true);
+      expect(isPermissionFreeOperation('read', { filePath: '.opencode/cc10x/activeContext.md' })).toBe(true);
+      expect(isPermissionFreeOperation('read', { filePath: '.opencode/cc10x/patterns.md' })).toBe(true);
+      expect(isPermissionFreeOperation('read', { filePath: '.opencode/cc10x/progress.md' })).toBe(true);
     });
 
     it('should identify memory file writes as permission-free for new files', () => {
       // Write to memory directory should be permission-free (for new files)
-      expect(isPermissionFreeOperation('write', { filePath: '.claude/cc10x/newfile.md' })).toBe(true);
+      expect(isPermissionFreeOperation('write', { filePath: '.opencode/cc10x/newfile.md' })).toBe(true);
     });
 
     it('should identify memory file edits as permission-free', () => {
-      expect(isPermissionFreeOperation('edit', { filePath: '.claude/cc10x/activeContext.md' })).toBe(true);
+      expect(isPermissionFreeOperation('edit', { filePath: '.opencode/cc10x/activeContext.md' })).toBe(true);
     });
 
     it('should identify mkdir for memory directory as permission-free', () => {
       expect(isPermissionFreeOperation('bash', { 
         command: 'mkdir', 
-        args: ['-p', '.claude/cc10x'] 
+        args: ['-p', '.opencode/cc10x'] 
       })).toBe(true);
     });
 

@@ -6,7 +6,7 @@ const createMockContext = () => ({
   readFile: async (path: string): Promise<string> => {
     // Mock file system
     const mockFiles: Record<string, string> = {
-      '.claude/cc10x/activeContext.md': `# Active Context
+      '.opencode/cc10x/activeContext.md': `# Active Context
 ## Current Focus
 - Test focus
 
@@ -30,7 +30,7 @@ const createMockContext = () => ({
 
 ## Last Updated
 2024-01-01T00:00:00.000Z`,
-      '.claude/cc10x/patterns.md': `# Project Patterns
+      '.opencode/cc10x/patterns.md': `# Project Patterns
 ## Common Gotchas
 - Test gotcha
 
@@ -42,7 +42,7 @@ const createMockContext = () => ({
 
 ## Last Updated
 2024-01-01T00:00:00.000Z`,
-      '.claude/cc10x/progress.md': `# Progress Tracking
+      '.opencode/cc10x/progress.md': `# Progress Tracking
 ## Current Workflow
 - Test workflow
 
@@ -71,7 +71,7 @@ const createMockContext = () => ({
     console.log(`Mock edit: ${path}`);
   },
   bash: async (command: string, args: string[]): Promise<{ exitCode: number; stdout: string; stderr: string }> => {
-    if (command === 'mkdir' && args.includes('-p') && args.some(arg => arg.includes('.claude/cc10x'))) {
+    if (command === 'mkdir' && args.includes('-p') && args.some(arg => arg.includes('.opencode/cc10x'))) {
       return { exitCode: 0, stdout: '', stderr: '' };
     }
     return { exitCode: 1, stdout: '', stderr: 'Command not found' };
@@ -115,7 +115,7 @@ describe('MemoryManager', () => {
 2024-01-01T00:00:00.000Z`;
       
       mockCtx.readFile = async (path: string): Promise<string> => {
-        if (path === '.claude/cc10x/activeContext.md') {
+        if (path === '.opencode/cc10x/activeContext.md') {
           return brokenMemory;
         }
         throw new Error('File not found');

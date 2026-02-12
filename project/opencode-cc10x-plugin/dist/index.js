@@ -201,7 +201,7 @@ async function editFile(input, path, options) {
 }
 
 // src/memory.ts
-var MEMORY_DIR = ".claude/cc10x";
+var MEMORY_DIR = ".opencode/cc10x";
 var MEMORY_FILES = {
   activeContext: `${MEMORY_DIR}/activeContext.md`,
   patterns: `${MEMORY_DIR}/patterns.md`,
@@ -1354,9 +1354,9 @@ function isTestCommand(command) {
 function isMemoryOperation(input) {
   const filePath = input.args?.filePath || "";
   const memoryPaths = [
-    ".claude/cc10x/activeContext.md",
-    ".claude/cc10x/patterns.md",
-    ".claude/cc10x/progress.md"
+    ".opencode/cc10x/activeContext.md",
+    ".opencode/cc10x/patterns.md",
+    ".opencode/cc10x/progress.md"
   ];
   return memoryPaths.some((path) => filePath.includes(path));
 }
@@ -1410,7 +1410,7 @@ var OpenCodeCC10xPlugin = async (input) => {
   const routerHook = await cc10xRouter({ ...input, $ });
   return {
     name: "opencode-cc10x",
-    description: "Intelligent orchestration system for OpenCode - port of cc10x from Claude Code",
+    description: "Intelligent orchestration system for OpenCode",
     version: "6.0.24",
     hooks: {
       // Router hook that intercepts user requests and orchestrates workflows

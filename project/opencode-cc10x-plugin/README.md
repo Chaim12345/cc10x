@@ -10,7 +10,6 @@ Current release: `6.0.24`
 
 - This package is the **OpenCode port** of cc10x.
 - It is intended for **OpenCode runtime only**.
-- Claude Code references are historical/origin context, not runtime requirements for this package.
 - Upstream origin: `romiluz13/cc10x` concept and workflow model.
 
 ## Features
@@ -19,7 +18,7 @@ Current release: `6.0.24`
 - **6 Specialized Agents** - Component builder, bug investigator, code reviewer, silent failure hunter, integration verifier, planner
 - **12 Supporting Skills** - Session memory, TDD enforcement, code generation, debugging patterns, and more
 - **Task-Based Orchestration** - Uses OpenCode's Task system for coordinated multi-agent workflows
-- **Memory Persistence** - Survives context compaction with .claude/cc10x/ memory bank
+- **Memory Persistence** - Survives context compaction with .opencode/cc10x/ memory bank
 - **Parallel Execution** - Code reviewer and silent failure hunter run simultaneously
 - **Confidence Scoring** - 80%+ threshold for issue reporting
 - **TDD Enforcement** - RED → GREEN → REFACTOR cycle with exit code verification
@@ -33,7 +32,7 @@ USER REQUEST
 ┌─────────────────────────────────────────────────────────────────┐
 │  cc10x-router (OpenCode Plugin)                                 │
 │  ├─ Intent Detection                                           │
-│  ├─ Memory Loading (.claude/cc10x/)                            │
+│  ├─ Memory Loading (.opencode/cc10x/)                          │
 │  ├─ Task Hierarchy Creation                                    │
 │  └─ Workflow Orchestration                                     │
 └─────────────────────────────────────────────────────────────────┘
@@ -96,7 +95,7 @@ npm add ./opencode-cc10x-<version>.tgz
 
 4. **Set up cc10x memory directory:**
 
-The plugin will automatically create `.claude/cc10x/` on first use.
+The plugin will automatically create `.opencode/cc10x/` on first use.
 
 5. **Configure agents (optional):**
 
@@ -184,10 +183,10 @@ cc10x skills are automatically loaded. Control access with:
 
 ## Memory System
 
-cc10x uses `.claude/cc10x/` for persistent memory:
+cc10x uses `.opencode/cc10x/` for persistent memory:
 
 ```
-.claude/cc10x/
+.opencode/cc10x/
 ├── activeContext.md   # Current focus, decisions, learnings
 ├── patterns.md        # Project conventions, common gotchas
 └── progress.md        # Completed work, verification evidence
@@ -247,10 +246,10 @@ opencode --plugin ./dist/
 
 ## Origin and Migration Notes
 
-This repository is the OpenCode port/fork of cc10x. If you are migrating from Claude Code:
+This repository is the OpenCode port/fork of cc10x.
 
 1. Install this plugin in OpenCode.
-2. Copy existing `.claude/cc10x/` memory files into your project root.
+2. Copy existing memory files into `.opencode/cc10x/` in your project root.
 3. The plugin will reuse those files directly.
 4. Workflows are adapted to OpenCode agents/tasks while preserving cc10x intent.
 
@@ -267,7 +266,7 @@ This repository is the OpenCode port/fork of cc10x. If you are migrating from Cl
 - Restart OpenCode after plugin installation
 
 ### Memory issues
-- Ensure `.claude/cc10x/` directory exists and is writable
+- Ensure `.opencode/cc10x/` directory exists and is writable
 - Check file permissions
 - Plugin will auto-create missing files with templates
 
@@ -276,7 +275,7 @@ This repository is the OpenCode port/fork of cc10x. If you are migrating from Cl
 This is a faithful port of cc10x. For issues or enhancements:
 
 1. Check existing issues
-2. Ensure compatibility with both Claude Code and OpenCode patterns
+2. Keep behavior aligned with OpenCode plugin patterns
 3. Maintain the core cc10x principles and workflows
 4. Test with both simple and complex development tasks
 
@@ -288,4 +287,4 @@ MIT - Same as original cc10x
 
 - Original cc10x by romiluz13
 - OpenCode team for the excellent plugin system
-- Claude Code team for the orchestration patterns
+- cc10x maintainers for the orchestration patterns

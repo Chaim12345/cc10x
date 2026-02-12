@@ -1,4 +1,4 @@
-// Compatibility layer to provide file operation methods similar to Claude Code
+// Compatibility layer for cc10x helper I/O on OpenCode
 // These wrap OpenCode's native tools with cc10x-expected interfaces
 
 export async function readFile(input: any, path: string): Promise<string> {
@@ -114,9 +114,9 @@ export async function bash(input: any, command: string, args: string[] = []): Pr
 export function isPermissionFreeOperation(tool: string, args: any): boolean {
   // Memory operations are permission-free in cc10x
   const memoryPaths = [
-    '.claude/cc10x/activeContext.md',
-    '.claude/cc10x/patterns.md',
-    '.claude/cc10x/progress.md'
+    '.opencode/cc10x/activeContext.md',
+    '.opencode/cc10x/patterns.md',
+    '.opencode/cc10x/progress.md'
   ];
   
   if (tool === 'read' && args?.filePath) {
@@ -129,15 +129,15 @@ export function isPermissionFreeOperation(tool: string, args: any): boolean {
   
   if (tool === 'write' && args?.filePath) {
     // Write is permission-free for any file in memory directory (for new files)
-    // Since we can't check existence, we'll allow writes to any .claude/cc10x/ path
-    return args.filePath.includes('.claude/cc10x/');
+    // Since we can't check existence, we'll allow writes to any .opencode/cc10x/ path
+    return args.filePath.includes('.opencode/cc10x/');
   }
   
   if (tool === 'bash' && args?.command) {
     const command = args.command;
     // mkdir for memory directory is permission-free
     if (command === 'mkdir' && args.args?.includes('-p') && 
-        args.args?.some((arg: string) => arg.includes('.claude/cc10x'))) {
+        args.args?.some((arg: string) => arg.includes('.opencode/cc10x'))) {
       return true;
     }
   }

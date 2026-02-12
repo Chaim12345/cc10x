@@ -7,7 +7,7 @@ export interface CC10XMemory {
   lastUpdated: string;
 }
 
-const MEMORY_DIR = '.claude/cc10x';
+const MEMORY_DIR = '.opencode/cc10x';
 const MEMORY_FILES = {
   activeContext: `${MEMORY_DIR}/activeContext.md`,
   patterns: `${MEMORY_DIR}/patterns.md`,

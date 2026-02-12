@@ -18,7 +18,7 @@ export const OpenCodeCC10xPlugin = async (input: any) => {
 
   return {
     name: 'opencode-cc10x',
-    description: 'Intelligent orchestration system for OpenCode - port of cc10x from Claude Code',
+    description: 'Intelligent orchestration system for OpenCode',
     version: '6.0.24',
     hooks: {
       // Router hook that intercepts user requests and orchestrates workflows

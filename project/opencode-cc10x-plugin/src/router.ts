@@ -202,9 +202,9 @@ function isTestCommand(command?: string): boolean {
 function isMemoryOperation(input: ToolInput): boolean {
   const filePath = input.args?.filePath || '';
   const memoryPaths = [
-    '.claude/cc10x/activeContext.md',
-    '.claude/cc10x/patterns.md', 
-    '.claude/cc10x/progress.md'
+    '.opencode/cc10x/activeContext.md',
+    '.opencode/cc10x/patterns.md', 
+    '.opencode/cc10x/progress.md'
   ];
   return memoryPaths.some(path => filePath.includes(path));
 }
