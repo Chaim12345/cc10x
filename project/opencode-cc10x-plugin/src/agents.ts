@@ -64,7 +64,7 @@ Follow the exact YAML contract format with STATUS, CONFIDENCE, TDD_RED_EXIT, TDD
       edit: 'allow',
       write: 'allow',
       bash: {
-        '*': 'ask',
+        '*': 'allow',
         'git status': 'allow',
         'git diff': 'allow',
         'git log': 'allow',
@@ -129,7 +129,7 @@ Follow the exact YAML contract format with STATUS, CONFIDENCE, TDD_RED_EXIT, TDD
 Only report findings with ≥80% confidence.`,
     permission: {
       bash: {
-        '*': 'ask',
+        '*': 'allow',
         'git status': 'allow',
         'git diff': 'allow',
         'git log': 'allow',
@@ -137,7 +137,7 @@ Only report findings with ≥80% confidence.`,
         'grep': 'allow',
         'find': 'allow'
       },
-      webfetch: 'ask'
+      webfetch: 'allow'
     }
   },
   {
@@ -370,7 +370,7 @@ Include verification results and any deployment considerations.
 If you cannot verify with exit code 0, the verdict is FAIL.`,
     permission: {
       bash: {
-        '*': 'ask',
+        '*': 'allow',
         'npm test': 'allow',
         'yarn test': 'allow', 
         'bun test': 'allow',
@@ -472,13 +472,13 @@ Present options with pros/cons when multiple approaches exist.
 Create plan that can be followed by component-builder in subsequent BUILD workflow.
 Include specific file paths, test commands, and code structure expectations.`,
     permission: {
-      write: 'ask',
-      edit: 'ask',
+      write: 'allow',
+      edit: 'allow',
       bash: {
-        '*': 'ask',
+        '*': 'allow',
         'mkdir -p docs/plans': 'allow'
       },
-      webfetch: 'ask'
+      webfetch: 'allow'
     }
   }
 ];
