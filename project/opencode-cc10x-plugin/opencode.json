@@ -1,0 +1,118 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "plugin": ["opencode-cc10x"],
+  "agent": {
+    "cc10x-component-builder": {
+      "description": "Builds features using TDD cycle (RED → GREEN → REFACTOR). Part of cc10x orchestration system.",
+      "mode": "subagent",
+      "temperature": 0.3,
+      "color": "green",
+      "tools": {
+        "write": true,
+        "edit": true,
+        "bash": true,
+        "grep": true,
+        "glob": true,
+        "skill": true,
+        "lsp": true,
+        "askUserQuestion": true
+      }
+    },
+    "cc10x-bug-investigator": {
+      "description": "Investigates bugs with log-first approach. Part of cc10x orchestration system.",
+      "mode": "subagent", 
+      "temperature": 0.2,
+      "color": "orange",
+      "tools": {
+        "write": false,
+        "edit": false,
+        "bash": true,
+        "grep": true,
+        "glob": true,
+        "skill": true,
+        "lsp": true,
+        "webfetch": true
+      }
+    },
+    "cc10x-code-reviewer": {
+      "description": "Reviews code with 80%+ confidence threshold. Part of cc10x orchestration system.",
+      "mode": "subagent",
+      "temperature": 0.1,
+      "color": "yellow",
+      "tools": {
+        "write": false,
+        "edit": false,
+        "bash": true,
+        "grep": true,
+        "glob": true,
+        "skill": true,
+        "lsp": true
+      }
+    },
+    "cc10x-silent-failure-hunter": {
+      "description": "Finds silent failures and error handling gaps. Part of cc10x orchestration system.",
+      "mode": "subagent",
+      "temperature": 0.2,
+      "color": "red",
+      "tools": {
+        "write": false,
+        "edit": false,
+        "bash": true,
+        "grep": true,
+        "glob": true,
+        "skill": true,
+        "lsp": true
+      }
+    },
+    "cc10x-integration-verifier": {
+      "description": "Performs end-to-end validation. Part of cc10x orchestration system.",
+      "mode": "subagent",
+      "temperature": 0.1,
+      "color": "blue",
+      "tools": {
+        "write": false,
+        "edit": false,
+        "bash": true,
+        "grep": true,
+        "glob": true,
+        "skill": true,
+        "lsp": true,
+        "askUserQuestion": true
+      }
+    },
+    "cc10x-planner": {
+      "description": "Creates comprehensive plans with research. Part of cc10x orchestration system.",
+      "mode": "subagent",
+      "temperature": 0.4,
+      "color": "purple",
+      "tools": {
+        "write": true,
+        "edit": true,
+        "bash": true,
+        "grep": true,
+        "glob": true,
+        "skill": true,
+        "lsp": true,
+        "webfetch": true
+      }
+    }
+  },
+  "permission": {
+    "bash": {
+      "mkdir -p .claude/cc10x": "allow",
+      "git status": "allow",
+      "git diff": "allow",
+      "git log": "allow",
+      "npm test": "allow",
+      "yarn test": "allow",
+      "bun test": "allow",
+      "npm start": "allow",
+      "*": "ask"
+    },
+    "edit": "allow",
+    "write": "allow",
+    "skill": {
+      "cc10x:*": "allow"
+    }
+  }
+}

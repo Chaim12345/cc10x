@@ -2,6 +2,11 @@
 
 ### The Intelligent Orchestrator for Claude Code
 
+## Repository Layout
+
+- ClaudeCode plugin source: `plugins/cc10x`
+- OpenCode port source: `project/opencode-cc10x-plugin`
+
 **Current version:** 6.0.18
 
 **Recommended: Create `~/.claude/CLAUDE.md` (global) so the router is always active across all projects.**
