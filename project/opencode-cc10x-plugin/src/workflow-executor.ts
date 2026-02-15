@@ -47,6 +47,8 @@ export class WorkflowExecutor {
     } catch (error) {
       console.error(`❌ ${intent} workflow failed:`, error);
       await this.handleWorkflowFailure(input, workflowTaskId, error);
+      const message = (error as any)?.message || String(error);
+      await taskOrchestrator.failWorkflow(workflowTaskId, message);
     }
   }
 

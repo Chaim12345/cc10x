@@ -3,12 +3,19 @@ import { existsSync } from 'node:fs';
 export const OPENCODE_MEMORY_DIR = '.opencode/cc10x';
 export const LEGACY_MEMORY_DIR = '.claude/cc10x';
 
+const MEMORY_DIR_ALIASES: Record<string, string> = {
+  [OPENCODE_MEMORY_DIR]: OPENCODE_MEMORY_DIR,
+  'opencode/cc10x': OPENCODE_MEMORY_DIR,
+  [LEGACY_MEMORY_DIR]: LEGACY_MEMORY_DIR,
+  'claude/cc10x': LEGACY_MEMORY_DIR,
+};
+
 function sanitizeMemoryDir(value: string): string {
   const normalized = normalizePath(value);
   if (!normalized || isAbsoluteLike(normalized) || hasTraversal(normalized)) {
     return OPENCODE_MEMORY_DIR;
   }
-  return normalized;
+  return toCanonicalMemoryDir(normalized) ?? OPENCODE_MEMORY_DIR;
 }
 
 function normalizePath(value: string): string {
@@ -45,6 +52,11 @@ export function getKnownMemoryDirs(): string[] {
   return Array.from(new Set(dirs));
 }
 
+export function toCanonicalMemoryDir(value: string): string | null {
+  const normalized = normalizePath(value);
+  return MEMORY_DIR_ALIASES[normalized] ?? null;
+}
+
 export function buildMemoryFiles(memoryDir: string) {
   return {
     activeContext: `${memoryDir}/activeContext.md`,
@@ -66,5 +78,7 @@ export function isMemoryPath(filePath: string): boolean {
 export function isMemoryDirectory(path: string): boolean {
   const normalized = normalizePath(path);
   if (!normalized || isAbsoluteLike(normalized) || hasTraversal(normalized)) return false;
-  return getKnownMemoryDirs().some((dir) => normalizePath(dir) === normalized);
+  const canonical = toCanonicalMemoryDir(normalized);
+  if (!canonical) return false;
+  return getKnownMemoryDirs().some((dir) => normalizePath(dir) === canonical);
 }

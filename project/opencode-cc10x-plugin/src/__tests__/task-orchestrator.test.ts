@@ -245,6 +245,37 @@ describe('TaskOrchestrator', () => {
     });
   });
 
+  describe('failWorkflow', () => {
+    it('should mark workflow failed and block pending tasks', async () => {
+      await taskOrchestrator.createWorkflowTask(mockCtx, {
+        userRequest: 'build a feature',
+        intent: 'BUILD',
+        memory: { activeContext: '', patterns: '', progress: '' }
+      });
+
+      const workflowId = taskOrchestrator.getActiveWorkflows()[0].id;
+      await taskOrchestrator.failWorkflow(workflowId, 'test failure');
+
+      const failedWorkflow = taskOrchestrator['activeWorkflows'].get(workflowId);
+      expect(failedWorkflow?.status).toBe('failed');
+      expect(failedWorkflow?.tasks.some((t: any) => t.status === 'pending')).toBe(false);
+    });
+
+    it('should not return failed workflow from active workflow check', async () => {
+      await taskOrchestrator.createWorkflowTask(mockCtx, {
+        userRequest: 'build a feature',
+        intent: 'BUILD',
+        memory: { activeContext: '', patterns: '', progress: '' }
+      });
+
+      const workflowId = taskOrchestrator.getActiveWorkflows()[0].id;
+      await taskOrchestrator.failWorkflow(workflowId, 'test failure');
+
+      const activeWorkflow = await taskOrchestrator.checkForActiveWorkflows(mockCtx);
+      expect(activeWorkflow).toBeNull();
+    });
+  });
+
   describe('recordExecutionResult', () => {
     it('should record execution results without errors', async () => {
       await expect(taskOrchestrator.recordExecutionResult(mockCtx, {

@@ -184,12 +184,18 @@ function generateReasoning(intent, keywords, memoryContext) {
 import { existsSync } from "node:fs";
 var OPENCODE_MEMORY_DIR = ".opencode/cc10x";
 var LEGACY_MEMORY_DIR = ".claude/cc10x";
+var MEMORY_DIR_ALIASES = {
+  [OPENCODE_MEMORY_DIR]: OPENCODE_MEMORY_DIR,
+  "opencode/cc10x": OPENCODE_MEMORY_DIR,
+  [LEGACY_MEMORY_DIR]: LEGACY_MEMORY_DIR,
+  "claude/cc10x": LEGACY_MEMORY_DIR
+};
 function sanitizeMemoryDir(value) {
   const normalized = normalizePath(value);
   if (!normalized || isAbsoluteLike(normalized) || hasTraversal(normalized)) {
     return OPENCODE_MEMORY_DIR;
   }
-  return normalized;
+  return toCanonicalMemoryDir(normalized) ?? OPENCODE_MEMORY_DIR;
 }
 function normalizePath(value) {
   return value.replace(/\\/g, "/").replace(/\/+/g, "/").replace(/^\.\//, "").replace(/\/+$/, "").trim();
@@ -214,6 +220,10 @@ function getKnownMemoryDirs() {
   const dirs = [preferred, OPENCODE_MEMORY_DIR, LEGACY_MEMORY_DIR];
   return Array.from(new Set(dirs));
 }
+function toCanonicalMemoryDir(value) {
+  const normalized = normalizePath(value);
+  return MEMORY_DIR_ALIASES[normalized] ?? null;
+}
 function buildMemoryFiles(memoryDir) {
   return {
     activeContext: `${memoryDir}/activeContext.md`,
@@ -228,6 +238,31 @@ function isMemoryPath(filePath) {
     const prefix = `${dir}/`;
     return normalized === dir || normalized.startsWith(prefix);
   });
+}
+
+// src/runtime-compat.ts
+var TOOL_ALIASES = {
+  bash: "bash",
+  execute: "bash",
+  read: "read",
+  write: "write",
+  create: "write",
+  edit: "edit",
+  grep: "grep",
+  glob: "glob",
+  list: "list",
+  webfetch: "webfetch",
+  skill: "skill",
+  patch: "patch",
+  task: "task",
+  question: "question",
+  todowrite: "todowrite",
+  todoread: "todoread"
+};
+function normalizeToolName(tool) {
+  if (!tool) return "";
+  const normalized = tool.trim().toLowerCase();
+  return TOOL_ALIASES[normalized] ?? normalized;
 }
 
 // src/compatibility-layer.ts
@@ -909,6 +944,18 @@ Parallel execution: code-reviewer and silent-failure-hunter can run simultaneous
       console.log(`\u2705 Workflow ${workflowId} completed`);
     }
   }
+  async failWorkflow(workflowId, reason) {
+    const workflow = this.activeWorkflows.get(workflowId);
+    if (!workflow) return;
+    workflow.status = "failed";
+    for (const task of workflow.tasks) {
+      if (task.status === "pending") {
+        task.status = "blocked";
+      }
+    }
+    const details = reason ? ` (${reason})` : "";
+    console.log(`\u274C Workflow ${workflowId} failed${details}`);
+  }
   getActiveWorkflows() {
     return Array.from(this.activeWorkflows.values()).filter((w) => w.status === "active");
   }
@@ -941,6 +988,8 @@ var WorkflowExecutor = class {
     } catch (error) {
       console.error(`\u274C ${intent} workflow failed:`, error);
       await this.handleWorkflowFailure(input, workflowTaskId, error);
+      const message = error?.message || String(error);
+      await taskOrchestrator.failWorkflow(workflowTaskId, message);
     }
   }
   async executeBuildWorkflow(input, options) {
@@ -1353,7 +1402,8 @@ async function cc10xRouter(input) {
       await memoryManager.saveCompactionCheckpoint(input2);
     },
     toolExecuteBefore: async (input2, output) => {
-      if (input2.tool === "bash" && isTestCommand(input2.args?.command)) {
+      const normalizedTool = normalizeToolName(input2.tool);
+      if (normalizedTool === "bash" && isTestCommand(input2.args?.command)) {
         await enforceTDDRequirements(input2, input2);
       }
       if (isMemoryOperation(input2)) {
@@ -1362,8 +1412,9 @@ async function cc10xRouter(input) {
     },
     toolExecuteAfter: async (input2, output) => {
       if (output.exitCode !== void 0) {
+        const normalizedTool = normalizeToolName(input2.tool);
         await taskOrchestrator.recordExecutionResult(input2, {
-          tool: input2.tool || "unknown",
+          tool: normalizedTool || "unknown",
           command: String(input2.args?.command || ""),
           exitCode: output.exitCode,
           timestamp: (/* @__PURE__ */ new Date()).toISOString()

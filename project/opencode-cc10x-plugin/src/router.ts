@@ -1,6 +1,7 @@
 import { detectIntent, WorkflowType } from './intent-detection';
 import { memoryManager } from './memory';
 import { isMemoryPath } from './memory-paths';
+import { normalizeToolName } from './runtime-compat';
 import { taskOrchestrator } from './task-orchestrator';
 import { workflowExecutor } from './workflow-executor';
 
@@ -89,8 +90,10 @@ export async function cc10xRouter(input: any): Promise<RouterHooks> {
     },
 
     toolExecuteBefore: async (input: ToolInput, output: ToolOutput) => {
+      const normalizedTool = normalizeToolName(input.tool);
+
       // TDD enforcement: Check if we're in a test phase
-      if (input.tool === 'bash' && isTestCommand(input.args?.command)) {
+      if (normalizedTool === 'bash' && isTestCommand(input.args?.command)) {
         await enforceTDDRequirements(input, input);
       }
       
@@ -103,8 +106,9 @@ export async function cc10xRouter(input: any): Promise<RouterHooks> {
     toolExecuteAfter: async (input: ToolInput, output: ToolOutput) => {
       // Capture exit codes for verification
       if (output.exitCode !== undefined) {
+        const normalizedTool = normalizeToolName(input.tool);
         await taskOrchestrator.recordExecutionResult(input, {
-          tool: input.tool || 'unknown',
+          tool: normalizedTool || 'unknown',
           command: String(input.args?.command || ''),
           exitCode: output.exitCode,
           timestamp: new Date().toISOString()

@@ -1,4 +1,5 @@
 import { isMemoryDirectory, isMemoryPath } from './memory-paths';
+import { normalizeToolName } from './runtime-compat';
 
 // Compatibility layer for cc10x helper I/O on OpenCode
 // These wrap OpenCode's native tools with cc10x-expected interfaces
@@ -114,26 +115,29 @@ export async function bash(input: any, command: string, args: string[] = []): Pr
 
 // Permission checking utilities
 export function isPermissionFreeOperation(tool: string, args: any): boolean {
-  if (tool === 'read' && args?.filePath) {
+  const normalizedTool = normalizeToolName(tool);
+
+  if (normalizedTool === 'read' && args?.filePath) {
     return isMemoryPath(args.filePath);
   }
   
-  if (tool === 'edit' && args?.filePath) {
+  if (normalizedTool === 'edit' && args?.filePath) {
     return isMemoryPath(args.filePath);
   }
   
-  if (tool === 'write' && args?.filePath) {
+  if (normalizedTool === 'write' && args?.filePath) {
     return isMemoryPath(args.filePath);
   }
   
-  if (tool === 'bash' && args?.command) {
+  if (normalizedTool === 'bash' && args?.command) {
     const command = args.command;
     // mkdir for memory directory is permission-free
-    if (command === 'mkdir' && args.args?.includes('-p') && 
-        args.args?.some((arg: string) => {
-          return isMemoryDirectory(String(arg));
-        })) {
-      return true;
+    if (command === 'mkdir' && Array.isArray(args.args)) {
+      const mkdirArgs = args.args.map((arg: unknown) => String(arg));
+      if (!mkdirArgs.includes('-p')) return false;
+
+      const targetPaths = mkdirArgs.filter((arg: string) => !arg.startsWith('-'));
+      return targetPaths.length === 1 && isMemoryDirectory(targetPaths[0]);
     }
   }
   

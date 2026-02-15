@@ -378,6 +378,21 @@ Parallel execution: code-reviewer and silent-failure-hunter can run simultaneous
     }
   }
 
+  async failWorkflow(workflowId: string, reason?: string): Promise<void> {
+    const workflow = this.activeWorkflows.get(workflowId);
+    if (!workflow) return;
+
+    workflow.status = 'failed';
+    for (const task of workflow.tasks) {
+      if (task.status === 'pending') {
+        task.status = 'blocked';
+      }
+    }
+
+    const details = reason ? ` (${reason})` : '';
+    console.log(`❌ Workflow ${workflowId} failed${details}`);
+  }
+
   getActiveWorkflows(): WorkflowTask[] {
     return Array.from(this.activeWorkflows.values()).filter(w => w.status === 'active');
   }

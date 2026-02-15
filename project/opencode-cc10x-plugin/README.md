@@ -152,7 +152,7 @@ This directory is created in your current project/workspace root.
 Compatibility behavior:
 
 - Auto-detect priority: `.opencode/cc10x/` first, then `.claude/cc10x/`
-- You can force a specific memory directory with `CC10X_MEMORY_DIR`
+- You can force memory directory with `CC10X_MEMORY_DIR` using only `.opencode/cc10x` or `.claude/cc10x`
 
 Example:
 

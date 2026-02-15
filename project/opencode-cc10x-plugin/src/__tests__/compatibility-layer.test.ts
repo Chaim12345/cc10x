@@ -19,6 +19,7 @@ describe('Compatibility Layer', () => {
     it('should identify memory file writes as permission-free for new files', () => {
       // Write to memory directory should be permission-free (for new files)
       expect(isPermissionFreeOperation('write', { filePath: '.opencode/cc10x/newfile.md' })).toBe(true);
+      expect(isPermissionFreeOperation('create', { filePath: '.opencode/cc10x/newfile.md' })).toBe(true);
     });
 
     it('should identify memory file edits as permission-free', () => {
@@ -30,6 +31,17 @@ describe('Compatibility Layer', () => {
         command: 'mkdir', 
         args: ['-p', '.opencode/cc10x'] 
       })).toBe(true);
+      expect(isPermissionFreeOperation('execute', {
+        command: 'mkdir',
+        args: ['-p', '.opencode/cc10x']
+      })).toBe(true);
+    });
+
+    it('should reject mkdir when multiple target paths are provided', () => {
+      expect(isPermissionFreeOperation('bash', {
+        command: 'mkdir',
+        args: ['-p', '.opencode/cc10x', '/tmp/other']
+      })).toBe(false);
     });
 
     it('should return false for non-memory operations', () => {
@@ -52,6 +64,12 @@ describe('Compatibility Layer', () => {
 
         process.env.CC10X_MEMORY_DIR = '/tmp/absolute';
         expect(getPreferredMemoryDir()).toBe('.opencode/cc10x');
+
+        process.env.CC10X_MEMORY_DIR = 'docs';
+        expect(getPreferredMemoryDir()).toBe('.opencode/cc10x');
+
+        process.env.CC10X_MEMORY_DIR = 'claude/cc10x';
+        expect(getPreferredMemoryDir()).toBe('.claude/cc10x');
       } finally {
         if (original === undefined) delete process.env.CC10X_MEMORY_DIR;
         else process.env.CC10X_MEMORY_DIR = original;
